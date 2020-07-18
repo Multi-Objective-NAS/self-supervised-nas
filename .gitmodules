@@ -1,0 +1,9 @@
+[submodule "libs/SemiNAS"]
+	path = libs/SemiNAS
+	url = https://github.com/renqianluo/SemiNAS
+[submodule "libs/pytorch-metric-learning"]
+	path = libs/pytorch-metric-learning
+	url = https://github.com/KevinMusgrave/pytorch-metric-learning
+[submodule "libs/nasbench"]
+	path = libs/nasbench
+	url = https://github.com/google-research/nasbench
