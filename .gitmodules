@@ -6,7 +6,7 @@
 	url = https://github.com/KevinMusgrave/pytorch-metric-learning
 [submodule "libs/nasbench"]
 	path = libs/nasbench
-	url = https://github.com/google-research/nasbench
+	url = https://github.com/Multi-Objective-NAS/nasbench.git
 [submodule "libs/NAS-Bench-201"]
 	path = libs/NAS-Bench-201
-	url = https://github.com/D-X-Y/NAS-Bench-201.git
+	url = https://github.com/Multi-Objective-NAS/NAS-Bench-201.git
