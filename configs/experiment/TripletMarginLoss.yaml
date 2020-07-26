@@ -1,0 +1,10 @@
+loss:
+    name: TripletMarginLoss
+    margin: 0.1
+miner:
+    name: MultiSimilarityMiner
+    epsilon: 0.1
+trainer:
+    loss_weights:
+        reconstruction_loss: 1.0
+        metric_loss: 1.0
