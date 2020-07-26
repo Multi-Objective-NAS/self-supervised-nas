@@ -7,3 +7,6 @@
 [submodule "libs/nasbench"]
 	path = libs/nasbench
 	url = https://github.com/google-research/nasbench
+[submodule "libs/NAS-Bench-201"]
+	path = libs/NAS-Bench-201
+	url = https://github.com/D-X-Y/NAS-Bench-201.git
