@@ -10,9 +10,11 @@ def config_validator(cfg):
 
 
 def get_optimizer(name, parameters, **kwargs):
-    return {
-        'Adam': torch.optim.Adam(parameters, **kwargs),
-    }[name]
+    return getattr(torch.optim, name)(parameters, **kwargs)
+
+
+def get_scheduler(name, optimizer, **kwargs):
+    return getattr(torch.optim.lr_scheduler, name)(optimizer, **kwargs)
 
 
 def get_miner(name, **kwargs):

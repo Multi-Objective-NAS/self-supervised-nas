@@ -2,10 +2,14 @@ defaults:
     - controller: nasbench101
     - dataset: nasbench101
 optimizer:
-    name: Adam
-    lr: 0.00001
-    weight_decay: 0.0001
+    name: SGD
+    lr: 0.1
+    momentum: 0.9
+scheduler:
+    name: MultiStepLR
+    milestones: [100, 400]
+    gamma: 0.1
 trainer:
-    batch_size: 16
-    num_epochs: 1
-    data_device: 0
+    batch_size: 1024
+    num_epochs: 2
+    visualize_step: 400

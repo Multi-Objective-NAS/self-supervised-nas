@@ -27,12 +27,15 @@ dependencies:
     - attrs==19.3.0
     - backcall==0.2.0
     - bleach==3.1.5
+    - cachetools==4.1.1
     - chardet==3.0.4
     - decorator==4.4.2
     - defusedxml==0.6.0
     - entrypoints==0.3
     - future==0.18.2
     - gast==0.3.3
+    - google-auth==1.19.2
+    - google-auth-oauthlib==0.4.1
     - grpcio==1.30.0
     - h5py==2.10.0
     - hydra-core==0.11.3
@@ -60,6 +63,7 @@ dependencies:
     - nbformat==5.0.7
     - notebook==6.0.3
     - numpy==1.19.0
+    - oauthlib==3.1.0
     - omegaconf==1.4.1
     - packaging==20.4
     - pandocfilters==1.4.2
@@ -71,6 +75,8 @@ dependencies:
     - prompt-toolkit==3.0.5
     - protobuf==3.12.2
     - ptyprocess==0.6.0
+    - pyasn1==0.4.8
+    - pyasn1-modules==0.2.8
     - pygments==2.6.1
     - pyparsing==2.4.7
     - pyrsistent==0.16.0
@@ -79,10 +85,13 @@ dependencies:
     - pyyaml==5.3.1
     - pyzmq==19.0.1
     - requests==2.24.0
+    - requests-oauthlib==1.3.0
+    - rsa==4.6
     - scikit-learn==0.23.1
     - scipy==1.5.2
     - send2trash==1.5.0
-    - tensorboard==1.13.1
+    - tensorboard==2.3.0
+    - tensorboard-plugin-wit==1.7.0
     - tensorflow==1.13.1
     - tensorflow-estimator==1.13.0
     - termcolor==1.1.0

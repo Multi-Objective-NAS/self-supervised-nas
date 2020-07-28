@@ -2,8 +2,7 @@ loss:
     name: TripletMarginLoss
     margin: 0.1
 miner:
-    name: MultiSimilarityMiner
-    epsilon: 0.1
+    name: BatchHardMiner
 trainer:
     loss_weights:
         reconstruction_loss: 1.0

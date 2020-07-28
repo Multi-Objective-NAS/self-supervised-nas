@@ -10,13 +10,16 @@ from libs.SemiNAS.nas_bench.controller import NAO
 
 
 class GraphEmbeddingTrainer(trainers.MetricLossOnly):
-    def __init__(self, num_epochs, **kwargs):
+    def __init__(self, num_epochs, visualize_step, **kwargs):
         super().__init__(**kwargs)
         self.num_epochs = num_epochs
+        self.visualize_step = visualize_step
+        self.visualize_scratchpad = {}
 
     def calculate_loss(self, curr_batch):
         data, labels = curr_batch
-        data = torch.stack(data, dim=1)
+        data = torch.stack(data, dim=1).to(0)
+        labels = labels.to(0)
  
         enc_outputs, _, embeddings, _ = self.models['trunk'].encoder(
             data)
@@ -29,6 +32,10 @@ class GraphEmbeddingTrainer(trainers.MetricLossOnly):
             embeddings, labels, indices_tuple)
         self.losses['reconstruction_loss'] = self.get_reconstruction_loss(
             dec_outputs, data)
+
+        if self.iteration % self.visualize_step == 0:
+            self.visualize_scratchpad['embeddings'] = embeddings.detach().cpu()
+            self.visualize_scratchpad['labels'] = labels.detach().cpu()
 
     def initialize_dataloader(self):
         logging.info("Initializing dataloader")
@@ -43,7 +50,7 @@ class GraphEmbeddingTrainer(trainers.MetricLossOnly):
             pin_memory=False
         )
         if not self.iterations_per_epoch:
-            self.iterations_per_epoch = len(self.dataloader)
+            self.iterations_per_epoch = len(self.dataloader) // self.batch_size
         logging.info("Initializing dataloader iterator")
         self.dataloader_iter = iter(self.dataloader)
         logging.info("Done creating dataloader iterator")
