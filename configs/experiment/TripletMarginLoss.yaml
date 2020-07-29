@@ -2,7 +2,9 @@ loss:
     name: TripletMarginLoss
     margin: 0.1
 miner:
-    name: BatchHardMiner
+    name: TripletMarginMiner
+    margin: 0.1
+    type_of_triplets: semihard
 trainer:
     loss_weights:
         reconstruction_loss: 1.0

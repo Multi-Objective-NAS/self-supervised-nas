@@ -24,7 +24,7 @@ class TensorboardHook:
             img = self._get_embedding_visualization(
                 **trainer.visualize_scratchpad)
             self.writer.add_image('UMAP Embeddings', img,
-                                  self.total_iterations)
+                                  self.total_iterations, dataformats='HWC')
             trainer.visualize_scratchpad.clear()
 
         self.total_iterations += 1
@@ -32,6 +32,8 @@ class TensorboardHook:
     def _get_embedding_visualization(self, embeddings, labels):
         reduced_embeddings = self.visualizer.fit_transform(embeddings)
         unique_labels = np.unique(labels)
+        if len(unique_labels) > 16:
+            unique_labels = unique_labels[:16]
         num_classes = len(unique_labels)
 
         fig, ax = plt.subplots(figsize=(4, 4))
@@ -41,13 +43,13 @@ class TensorboardHook:
             indices = labels == label
             ax.plot(reduced_embeddings[indices, 0],
                     reduced_embeddings[indices, 1],
-                    ".", markersize=1, color=label_color[label_index])
+                    ".", markersize=4, color=label_color[label_index])
         fig.tight_layout()
         fig.canvas.draw()
         image_from_plot = np.frombuffer(
             fig.canvas.tostring_rgb(), dtype=np.uint8)
         image_from_plot = image_from_plot.reshape(
-            (3,) + fig.canvas.get_width_height())
+            fig.canvas.get_width_height() + (3, ))
         return image_from_plot
 
 
