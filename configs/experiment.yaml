@@ -1,6 +1,7 @@
 defaults:
     - controller: nasbench101
     - dataset: nasbench101
+    - experiment: NCALoss_4
 optimizer:
     name: Adam
     lr: 0.01

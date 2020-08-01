@@ -1,0 +1,11 @@
+loss:
+    name: NCALoss
+    softmax_scale: 1
+miner:
+    name: TripletMarginMiner
+    margin: 0.1
+    type_of_triplets: semihard
+trainer:
+    loss_weights:
+        reconstruction_loss: 1.0
+        metric_loss: 1.0
