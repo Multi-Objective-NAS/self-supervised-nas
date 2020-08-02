@@ -4,7 +4,7 @@
 # How to train
 - `CUDA_VISIBLE_DEVICES={device_index} python3 pretrain.py experiment=TripletMarginLoss`
 - `outputs/{date}/{time}/logs` -> tensorboard directory
-- Above directory can be checked with `tensorboard --bind_all --logdir={.../logs} --port 8080`
+- Above directory can be checked with `tensorboard --bind_all --logdir=/path/to/log --port 8080` or `tensorboard --bind_all --logdir_spec=exp1:/path/to/log1,exp2:/path/to/log2 --port 8080`
 - `outputs/{date}/{time}/weights` -> output model weights
 - **Use with caution** `pgrep -f "python pretrain.py" -a` will show all the training process. `pkill -f "python pretrain.py"` will kill them all.
 
