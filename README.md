@@ -14,4 +14,4 @@
 - `tmux attach -t {session_name}`: Attach to existing session
 - (Inside tmux session) `Ctrl+a d`: Detach existing session
 - (Inside tmux session) `Ctrl+a PgUp/PgDn`: Scroll inside session (`Ctrl+c` to abort)
-- (Inside tmux session) `Ctrl+a`: Close session
+- (Inside tmux session) `Ctrl+d`: Close session
