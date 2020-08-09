@@ -1,3 +1,4 @@
+import logging
 import hydra
 import torch
 import torch.nn
@@ -11,7 +12,7 @@ from src.hooks import TensorboardHook, ModelSaverHook
 
 @hydra.main(config_path='configs/experiment.yaml')
 def train(cfg):
-    print(cfg.pretty())
+    logging.info(cfg.pretty())
     config_validator(cfg)
 
     models = {'trunk': NAO(**cfg.controller).to(0)}
