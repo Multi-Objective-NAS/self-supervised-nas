@@ -1,0 +1,11 @@
+loss:
+    name: AngularLoss
+    alpha: 40
+miner:
+    name: AngularMiner
+    angle: 20
+trainer:
+    batch_size: 128
+    loss_weights:
+        reconstruction_loss: 1.0
+        metric_loss: 1.0
