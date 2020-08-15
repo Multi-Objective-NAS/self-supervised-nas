@@ -1,5 +1,5 @@
 dataset:
-    name: nasbench101
+    name: pretrain_nasbench101
     path: datasets/nasbench/nasbench_only108.tfrecord
     samples_per_class: 8
     graph_modify_ratio:
