@@ -1,6 +1,6 @@
 defaults:
     - controller: nasbench101
-    - dataset: nasbench101
+    - dataset: pretrain_nasbench101
 optimizer:
     name: Adam
     lr: 0.01
@@ -9,6 +9,7 @@ scheduler:
     milestones: [100, 600, 1200, 2400]
     gamma: 0.1
 trainer:
+    name: GraphEmbeddingTrainer
     batch_size: 512
     num_epochs: 1
     visualize_step: 400

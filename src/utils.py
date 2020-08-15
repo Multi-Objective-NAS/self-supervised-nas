@@ -1,5 +1,6 @@
 import torch
 from pytorch_metric_learning import losses, miners
+from src import trainers
 
 
 def config_validator(cfg):
@@ -23,3 +24,7 @@ def get_miner(name, **kwargs):
 
 def get_loss(name, **kwargs):
     return getattr(losses, name)(**kwargs)
+
+
+def get_trainer(name, **kwargs):
+    return getattr(trainers, name)(**kwargs)
