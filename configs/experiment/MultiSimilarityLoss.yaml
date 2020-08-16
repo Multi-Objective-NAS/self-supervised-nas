@@ -1,0 +1,13 @@
+loss:
+    name: MultiSimilarityLoss
+    alpha: 2
+    beta: 50
+    base: 0.5
+miner:
+    name: MultiSimilarityMiner
+    epsilon: 0.1
+trainer:
+    num_epochs: 5
+optimizer:
+  lr: 0.1
+  name: Adam
