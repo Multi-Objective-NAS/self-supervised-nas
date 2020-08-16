@@ -1,0 +1,16 @@
+loss:
+    name: TupletMarginLoss
+    margin: 5.73
+    scale: 64
+miner:
+    name: AngularMiner
+    angle: 20
+trainer:
+    batch_size: 64
+    loss_weights:
+        reconstruction_loss: 1.0
+        metric_loss: 1.0
+    num_epochs: 3
+optimizer:
+  lr: 0.01
+  name: Adam
