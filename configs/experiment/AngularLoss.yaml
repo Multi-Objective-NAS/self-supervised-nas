@@ -1,0 +1,12 @@
+loss:
+    name: AngularLoss
+    alpha: 25
+miner:
+    name: AngularMiner
+    angle: 12
+trainer:
+    batch_size: 256
+    num_epochs: 3
+optimizer:
+  lr: 0.07
+  name: Adam
