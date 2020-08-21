@@ -1,0 +1,14 @@
+defaults:
+    - controller: nasbench101
+    - dataset: nasbench101
+optimizer:
+    name: Adam
+    lr: 0.01
+scheduler:
+    name: MultiStepLR
+    milestones: [100, 600, 1200, 2400]
+    gamma: 0.1
+trainer:
+    batch_size: 512
+    num_epochs: 1
+    visualize_step: 400
