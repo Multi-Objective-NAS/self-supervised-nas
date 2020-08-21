@@ -5,23 +5,35 @@ import torch
 import numpy as np
 from hydra import utils as hydra_utils
 
-import nasbench
+#import nasbench
+#import NAS-Bench-201
+from NAS-Bench-201.nas_201_api import NASBench201API as api201
+from nasbench import api as api101
+
 from libs.SemiNAS.nas_bench import utils as seminas_utils
 
 
 def get_dataset(name, **kwargs):
-    assert name == 'nasbench101'
-    return NASBench101(**kwargs)
+    # nasbench.api.NASBench
+    
+    if name == 'nasbench101' :
+        return api101(**kwargs)
+    elif name == 'nasbench201' :
+        return api201(**kwargs)
+    else:
+        return None
 
 
-class NASBench101(torch.utils.data.IterableDataset):
-    def __init__(self, path, samples_per_class):
+class NASBench(torch.utils.data.IterableDataset):
+    def __init__(self, name, path, samples_per_class):
         if not pathlib.Path(path).is_absolute():
             path = hydra_utils.to_absolute_path(path)
         assert pathlib.Path(path).exists()
 
-        self.engine = nasbench.api.NASBench(path)
+        self.engine = get_dataset(name, path)
         self.samples_per_class = samples_per_class
+        self.name = name
+        self.len = -1
 
     def __iter__(self):
         for index, matrix, ops in self._random_graph_generator():
@@ -29,14 +41,18 @@ class NASBench101(torch.utils.data.IterableDataset):
                 yield self._encode(pmatrix, pops), index
 
     def __len__(self):
-        # 359082: Number of graphs with 7 vertices
-        return 359082 * self.samples_per_class
+        if self.len == 0:
+            for index, key in enumerate(self.engine.hash_iterator()):
+                arch = self.engine.get_model_spec_by_hash(hash_val)
+                matrix, ops = arch.matrix, arch.ops
+                if matrix.shape[0] == 7:
+                    self.len += 1
+        return self.len * self.samples_per_class
 
     def _random_graph_generator(self):
         for index, key in enumerate(self.engine.hash_iterator()):
-            fixed_stat, _ = self.engine.get_metrics_from_hash(key)
-            matrix, ops = np.array(
-                fixed_stat['module_adjacency']), fixed_stat['module_operations']
+            arch = self.engine.get_model_spec_by_hash(hash_val)
+            matrix, ops = arch.matrix, arch.ops
             if matrix.shape[0] == 7:
                 yield (index, matrix, ops)
 
@@ -51,9 +67,7 @@ class NASBench101(torch.utils.data.IterableDataset):
             perm = np.insert(perm, vertices-1, vertices-1)
 
             pmatrix, pops = nasbench.lib.graph_util.permute_graph(matrix, ops, perm)
-            if self.engine.is_valid(
-                nasbench.api.ModelSpec(matrix=matrix, ops=ops)
-            ):
+            if self.engine.get_modelspec(matrix=matrix, ops=ops):
                 count += 1
                 yield (pmatrix, pops)
 
