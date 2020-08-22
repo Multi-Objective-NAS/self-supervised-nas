@@ -33,7 +33,7 @@ class NASBench(torch.utils.data.IterableDataset):
         self.engine = get_dataset(name, path)
         self.samples_per_class = samples_per_class
         self.name = name
-        self.len = -1
+        self.len = 0
 
     def __iter__(self):
         for index, matrix, ops in self._random_graph_generator():
