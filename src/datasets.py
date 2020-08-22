@@ -7,19 +7,17 @@ from hydra import utils as hydra_utils
 
 #import nasbench
 #import NAS-Bench-201
-from NAS-Bench-201.nas_201_api import NASBench201API as api201
-from nasbench import api as api101
-
-from libs.SemiNAS.nas_bench import utils as seminas_utils
+from libs.nasbench201 import nas_201_api as api201
+from libs.nasbench.nasbench import api as api101
+from libs.nasbench.nasbench.lib import graph_util
+from libs.SemiNAS_modified.nasbench import utils as seminas_utils
 
 
 def get_dataset(name, **kwargs):
     # nasbench.api.NASBench
     
-    if name == 'nasbench101' :
-        return api101(**kwargs)
-    elif name == 'nasbench201' :
-        return api201(**kwargs)
+    if name == 'nasbench101' or name == 'nasbench201':
+        return NASBench(name, **kwargs)
     else:
         return None
 
@@ -29,11 +27,17 @@ class NASBench(torch.utils.data.IterableDataset):
         if not pathlib.Path(path).is_absolute():
             path = hydra_utils.to_absolute_path(path)
         assert pathlib.Path(path).exists()
-
-        self.engine = get_dataset(name, path)
+        
+        self.engine = None
+        if name == 'nasbench101':
+            self.engine = api101.NASBench(path)
+        elif name == 'nasbench201':
+            self.engine = api201.NASBench201API(path)
+            
         self.samples_per_class = samples_per_class
         self.name = name
         self.len = 0
+        self.search_space = self.engine.search_space
 
     def __iter__(self):
         for index, matrix, ops in self._random_graph_generator():
@@ -43,7 +47,7 @@ class NASBench(torch.utils.data.IterableDataset):
     def __len__(self):
         if self.len == 0:
             for index, key in enumerate(self.engine.hash_iterator()):
-                arch = self.engine.get_model_spec_by_hash(hash_val)
+                arch = self.engine.get_model_spec_by_hash(key)
                 matrix, ops = arch.matrix, arch.ops
                 if matrix.shape[0] == 7:
                     self.len += 1
@@ -51,7 +55,7 @@ class NASBench(torch.utils.data.IterableDataset):
 
     def _random_graph_generator(self):
         for index, key in enumerate(self.engine.hash_iterator()):
-            arch = self.engine.get_model_spec_by_hash(hash_val)
+            arch = self.engine.get_model_spec_by_hash(key)
             matrix, ops = arch.matrix, arch.ops
             if matrix.shape[0] == 7:
                 yield (index, matrix, ops)
@@ -66,7 +70,7 @@ class NASBench(torch.utils.data.IterableDataset):
             perm = np.insert(perm, 0, 0)
             perm = np.insert(perm, vertices-1, vertices-1)
 
-            pmatrix, pops = nasbench.lib.graph_util.permute_graph(matrix, ops, perm)
+            pmatrix, pops = graph_util.permute_graph(matrix, ops, perm)
             if self.engine.get_modelspec(matrix=matrix, ops=ops):
                 count += 1
                 yield (pmatrix, pops)
@@ -74,4 +78,4 @@ class NASBench(torch.utils.data.IterableDataset):
         raise StopIteration
 
     def _encode(self, matrix, ops):
-        return seminas_utils.convert_arch_to_seq(matrix, ops)
+        return seminas_utils.convert_arch_to_seq(matrix, ops, self.search_space)
