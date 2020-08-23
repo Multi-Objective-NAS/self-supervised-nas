@@ -2,3 +2,8 @@ dataset:
     name: nasbench101
     path: datasets/nasbench/nasbench_only108.tfrecord
     samples_per_class: 8
+    graph_modifier:
+        edit_distance_one: 0.5
+        edit_distance_two: 0.3
+        edit_distance_three: 0.2
+        
