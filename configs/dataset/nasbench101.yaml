@@ -1,4 +1,4 @@
 dataset:
     name: nasbench101
     path: datasets/nasbench/nasbench_only108.tfrecord
-    samples_per_class: 7
+    samples_per_class: 8

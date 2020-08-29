@@ -4,7 +4,7 @@ controller:
     mlp_layers: 2
     mlp_hidden_size: 64
     hidden_size: 16
-    vocab_size: 8
+    vocab_size: 7
     dropout: 0.0
     source_length: 27
     encoder_length: 27
