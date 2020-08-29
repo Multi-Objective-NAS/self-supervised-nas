@@ -1,5 +1,6 @@
 # Datasets
-datasets/*
+*.pth
+*.tfrecord
 
 # Experiment outputs
 outputs/*
