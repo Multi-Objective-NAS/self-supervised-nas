@@ -8,7 +8,7 @@ from hydra import utils as hydra_utils
 from libs.nasbench201 import nas_201_api as api201
 from libs.nasbench.nasbench import api as api101
 from libs.nasbench.nasbench.lib import graph_util
-from libs.SemiNAS.nasbench import utils as seminas_utils
+from libs.SemiNAS.nas_bench import utils as seminas_utils
 
 
 def get_dataset(name, path, **kwargs):
