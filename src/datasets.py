@@ -66,7 +66,8 @@ class NASBench(torch.utils.data.IterableDataset):
             perm = np.insert(perm, vertices-1, vertices-1)
 
             pmatrix, pops = graph_util.permute_graph(matrix, ops, perm)
-            if self.engine.get_modelspec(matrix=matrix, ops=ops):
+            modelspec = self.engine.get_modelspec(matrix=matrix, ops=ops)
+            if is_valid(modelspec):
                 count += 1
                 yield (pmatrix, pops)
 
