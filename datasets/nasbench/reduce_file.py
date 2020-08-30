@@ -1,6 +1,4 @@
 import torch
-from tqdm import tqdm
-
 import argparse
 import tensorflow as tf
 import tqdm
@@ -53,22 +51,15 @@ def _sample_and_write_pth(n, input_path, output_path, need_loss):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
-        description='Samples part of input TFrecord')
-    
+        description='Samples part of input TFrecord')    
     parser.add_argument('-n', '--number_of_rows', type=int,
                         required=True, help='Number of archs to be saved')
-    
-    
     parser.add_argument('-l', '--need_loss', type=bool, default=False,
                         required=True, help='Need loss data')
-    
-    
     parser.add_argument('-i', '--input_pth_path', required=True,
-                        help='Pth to be sampled')
-    
+                        help='Pth to be sampled')    
     parser.add_argument('-o', '--output_pth_path',
-                        required=True, help='Output pth path')
-    
+                        required=True, help='Output pth path')    
     args = parser.parse_args()
 
     _sample_and_write_pth(
