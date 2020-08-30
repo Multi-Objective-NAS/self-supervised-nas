@@ -15,7 +15,7 @@ def get_dataset(name, path, **kwargs):
     assert name == 'nasbench101' or name == 'nasbench201'
 
     if not pathlib.Path(path).is_absolute():
-            path = hydra_utils.to_absolute_path(path)
+        path = hydra_utils.to_absolute_path(path)
         assert pathlib.Path(path).exists()
 
     if name == 'nasbench101':
@@ -29,7 +29,6 @@ class NASBench(torch.utils.data.IterableDataset):
         self.engine = engine
             
         self.samples_per_class = samples_per_class
-        self.name = name
         self.search_space = engine.search_space # list of possible operations ex.[ CONV 3x3, MAXPOOL 3x3, ... ]
 
         length = 0
@@ -46,7 +45,7 @@ class NASBench(torch.utils.data.IterableDataset):
                 yield self._encode(pmatrix, pops), index
 
     def __len__(self):
-        return self.len * self.samples_per_class
+        return self._dataset_length * self.samples_per_class
 
     def _random_graph_generator(self):
         for index, key in enumerate(self.engine.hash_iterator()):
@@ -67,7 +66,7 @@ class NASBench(torch.utils.data.IterableDataset):
 
             pmatrix, pops = graph_util.permute_graph(matrix, ops, perm)
             modelspec = self.engine.get_modelspec(matrix=matrix, ops=ops)
-            if is_valid(modelspec):
+            if self.engine.is_valid(modelspec):
                 count += 1
                 yield (pmatrix, pops)
 
