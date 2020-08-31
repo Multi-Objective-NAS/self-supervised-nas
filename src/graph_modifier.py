@@ -10,9 +10,11 @@ class GraphModifier():
         self.validate = validate
         self.operations = operations
         self.samples_per_class = samples_per_class
-        self.edit_distance_one = edit_distance_one
-        self.edit_distance_two = edit_distance_two
-        self.edit_distance_three = edit_distance_three
+        
+        total = edit_distance_one + edit_distance_two + edit_distance_three
+        self.edit_distance_one = edit_distance_one / total
+        self.edit_distance_two = edit_distance_two / total
+        self.edit_distance_three = edit_distance_three / total
 
     def _random_matrix_idx_generator(self, len_matrix, repeat):
         def one_random_matrix_idx_generator(len_matrix):
@@ -68,7 +70,7 @@ class GraphModifier():
             if generated_count >= count:
                 raise StopIteration
 
-            matrix = copy.deepcopy(original_matrix)
+            matrix = original_matrix.copy()
             for idx in matrix_idxs:
                 matrix[idx] = 1 - matrix[idx]
 
@@ -83,7 +85,7 @@ class GraphModifier():
         for generated_count, op_pairs in enumerate(choices):
             if generated_count >= count:
                 raise StopIteration
-            ops = copy.deepcopy(original_ops)
+            ops = original_ops.copy()
             for op_pair in op_pairs:
                 ops[op_pair[0]] = op_pair[1]
             yield (matrix, ops)
@@ -95,9 +97,9 @@ class GraphModifier():
             return tuple(obj.reshape(1, -1)[0])
 
         def get_delete_node_matrix(original_matrix, idx):
-            matrix = copy.deepcopy(original_matrix)
-            remaining_idxs = [i for i in range(len(matrix)) if i != idx]
-            matrix = matrix[remaining_idxs][:, remaining_idxs]
+            matrix = original_matrix.copy()
+            matrix = np.delete(matrix, idx, axis=0)
+            matrix = np.delete(matrix, idx, axis=1)
             return matrix
 
         def delete_one_node_model_generator(original_matrix, original_ops):
@@ -199,15 +201,9 @@ class GraphModifier():
             yield (matrix, new_node)
 
     def generate_edited_models(self, matrix, ops):
-        assert (self.edit_distance_one + self.edit_distance_two +
-                self.edit_distance_three == 1)
-
-        edit_distance_one_count = int(
-            self.samples_per_class * self.edit_distance_one)
-        edit_distance_two_count = int(
-            self.samples_per_class * self.edit_distance_two)
-        edit_distance_three_count = self.samples_per_class - \
-            edit_distance_one_count - edit_distance_two_count
+        edit_distance_one_count = int(self.samples_per_class * self.edit_distance_one)
+        edit_distance_two_count = int(self.samples_per_class * self.edit_distance_two)
+        edit_distance_three_count = self.samples_per_class - edit_distance_one_count - edit_distance_two_count
 
         yield from(self.generate_edit_distance_one_models(matrix, ops, edit_distance_one_count))
         yield from(self.generate_edit_distance_two_models(matrix, ops, edit_distance_two_count))
