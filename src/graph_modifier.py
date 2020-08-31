@@ -1,4 +1,3 @@
-import copy
 import random
 import itertools
 
@@ -15,6 +14,7 @@ class GraphModifier():
         self.edit_distance_one = edit_distance_one / total
         self.edit_distance_two = edit_distance_two / total
         self.edit_distance_three = edit_distance_three / total
+        self.edit_functions = [self.generate_edit_distance_one_models, self.generate_edit_distance_two_models, self.generate_edit_distance_three_models]
 
     def _random_matrix_idx_generator(self, len_matrix, repeat):
         def one_random_matrix_idx_generator(len_matrix):
@@ -42,10 +42,9 @@ class GraphModifier():
             op_pairs = []
 
             # exclude INPUT, OUTPUT node
-            for idx, op in enumerate(ops[1:-1]):
+            for idx, op in enumerate(ops[1:-1], start=1):
                 new_ops = list(self.operations - set(op))
-                op_pairs.append((idx+1, new_ops[0]))
-                op_pairs.append((idx+1, new_ops[1]))
+                op_pairs.extend([(idx, new_op) for new_op in new_ops])
 
             random.shuffle(op_pairs)
             yield from op_pairs
@@ -86,8 +85,8 @@ class GraphModifier():
             if generated_count >= count:
                 raise StopIteration
             ops = original_ops.copy()
-            for op_pair in op_pairs:
-                ops[op_pair[0]] = op_pair[1]
+            for idx, op in op_pairs:
+                ops[idx] = op
             yield (matrix, ops)
 
     def get_delete_one_node_models(self, original_matrix, original_ops, count):
@@ -201,10 +200,4 @@ class GraphModifier():
             yield (matrix, new_node)
 
     def generate_edited_models(self, matrix, ops):
-        edit_distance_one_count = int(self.samples_per_class * self.edit_distance_one)
-        edit_distance_two_count = int(self.samples_per_class * self.edit_distance_two)
-        edit_distance_three_count = self.samples_per_class - edit_distance_one_count - edit_distance_two_count
-
-        yield from(self.generate_edit_distance_one_models(matrix, ops, edit_distance_one_count))
-        yield from(self.generate_edit_distance_two_models(matrix, ops, edit_distance_two_count))
-        yield from(self.generate_edit_distance_three_models(matrix, ops, edit_distance_three_count))
+        yield from(self.edit_functions[np.random.choice(range(len(self.edit_functions), p=[self.]))])(matrix, ops)
