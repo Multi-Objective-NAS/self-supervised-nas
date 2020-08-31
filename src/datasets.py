@@ -15,18 +15,18 @@ def get_dataset(name, **kwargs):
 
 
 class NASBench101(torch.utils.data.IterableDataset):
-    def __init__(self, path, samples_per_class, graph_modifier):
+    def __init__(self, path, samples_per_class, graph_modify_ratio):
         if not pathlib.Path(path).is_absolute():
             path = hydra_utils.to_absolute_path(path)
         assert pathlib.Path(path).exists()
 
         self.engine = nasbench.api.NASBench(path)
         self.samples_per_class = samples_per_class
-        self.graph_modifier = GraphModifier(engine=self.engine, samples_per_class=samples_per_class, **graph_modifier)
+        self.graph_modifier = GraphModifier(validate=self.is_valid, samples_per_class=samples_per_class, **graph_modify_ratio)
 
     def __iter__(self):
         for index, matrix, ops in self._random_graph_generator():
-            for pmatrix, pops in self._generate_positive_samples(matrix, ops):
+            for pmatrix, pops in self.graph_modifier.generate_edited_models(matrix, ops):
                 yield self._encode(pmatrix, pops), index
 
     def __len__(self):
@@ -41,9 +41,11 @@ class NASBench101(torch.utils.data.IterableDataset):
             if matrix.shape[0] == 7:
                 yield (index, matrix, ops)
 
-    def _generate_positive_samples(self, matrix, ops):
-        yield from self.graph_modifier.generate_edited_models(matrix, ops)
-        
     def _encode(self, matrix, ops):
         return seminas_utils.convert_arch_to_seq(matrix, ops)
-        
+
+    def is_valid(self, matrix, ops):
+        return self.engine.is_valid(nasbench.api.ModelSpec(
+                matrix=matrix,
+                ops=ops
+                )

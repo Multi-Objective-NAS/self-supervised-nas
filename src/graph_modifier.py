@@ -4,30 +4,15 @@ import itertools
 
 import numpy as np
 
-import nasbench
-
-INPUT = "input"
-OUTPUT = "output"
-CONV3X3 = "conv3x3-bn-relu"
-CONV1X1 = "conv1x1-bn-relu"
-MAXPOOL3X3 = "maxpool3x3"
-OPS = set([CONV1X1, CONV3X3, MAXPOOL3X3])
-
 
 class GraphModifier():
-    def __init__(self, engine, samples_per_class, edit_distance_one, edit_distance_two, edit_distance_three):
-        self.engine = engine
+    def __init__(self, validate, operations, samples_per_class, edit_distance_one, edit_distance_two, edit_distance_three):
+        self.validate = validate
+        self.operations = operations
         self.samples_per_class = samples_per_class
         self.edit_distance_one = edit_distance_one
         self.edit_distance_two = edit_distance_two
         self.edit_distance_three = edit_distance_three
-
-    def is_valid(self, matrix, ops):
-        # is it okay to hard code importing nasbench?
-        return self.engine.is_valid(nasbench.api.ModelSpec(
-            matrix=matrix,
-            ops=ops,
-        ))
 
     def _random_matrix_idx_generator(self, len_matrix, repeat):
         def one_random_matrix_idx_generator(len_matrix):
@@ -56,7 +41,7 @@ class GraphModifier():
 
             # exclude INPUT, OUTPUT node
             for idx, op in enumerate(ops[1:-1]):
-                new_ops = list(OPS - set(op))
+                new_ops = list(self.operations - set(op))
                 op_pairs.append((idx+1, new_ops[0]))
                 op_pairs.append((idx+1, new_ops[1]))
 
@@ -87,8 +72,8 @@ class GraphModifier():
             for idx in matrix_idxs:
                 matrix[idx] = 1 - matrix[idx]
 
-            fake_ops = [INPUT] + [CONV3X3] * (len_matrix-2) + [OUTPUT]
-            if self.is_valid(matrix, fake_ops):
+            fake_ops = ["input"] + [self.operations[0]] * (len_matrix-2) + ["output"]
+            if self.validate(matrix, fake_ops):
                 generated_count += 1
                 yield (matrix, ops)
 
@@ -123,7 +108,7 @@ class GraphModifier():
                     matrix = get_delete_node_matrix(original_matrix, idx)
                     ops = [op for op_idx, op in enumerate(
                         original_ops) if op_idx != idx]
-                    if not self.is_valid(matrix, ops):
+                    if not self.validate(matrix, ops):
                         continue
                     if (to_hashable(matrix), to_hashable(ops)) in generated:
                         continue
