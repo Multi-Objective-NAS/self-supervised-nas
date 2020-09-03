@@ -47,5 +47,5 @@ class NASBench101(torch.utils.data.IterableDataset):
     def is_valid(self, matrix, ops):
         return self.engine.is_valid(nasbench.api.ModelSpec(
                 matrix=matrix,
-                ops=ops
+                ops=ops)
                 )

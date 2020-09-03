@@ -1,7 +1,16 @@
 import random
-import itertools
 
 import numpy as np
+
+
+class NoValidModelExcpetion(Exception):
+    def __init__(self, *args):
+        self.message = "No valid model"
+        if len(args) > 0:
+            self.message = f"{self.message} with {args}"
+
+    def __str__(self):
+        return self.message
 
 
 class GraphModifier():
@@ -11,193 +20,124 @@ class GraphModifier():
         self.samples_per_class = samples_per_class
         
         total = edit_distance_one + edit_distance_two + edit_distance_three
-        self.edit_distance_one = edit_distance_one / total
-        self.edit_distance_two = edit_distance_two / total
-        self.edit_distance_three = edit_distance_three / total
-        self.edit_functions = [self.generate_edit_distance_one_models, self.generate_edit_distance_two_models, self.generate_edit_distance_three_models]
+        edit_distance_one = edit_distance_one / total
+        edit_distance_two = edit_distance_two / total
+        edit_distance_three = edit_distance_three / total
+        self.modify_ratio = [edit_distance_one, edit_distance_two, edit_distance_three]
+        self.modify_functions = [self.generate_edit_distance_one_model, self.generate_edit_distance_two_model, self.generate_edit_distance_three_model]
 
     def _random_matrix_idx_generator(self, len_matrix, repeat):
-        def one_random_matrix_idx_generator(len_matrix):
-            indexes = []
-            for i in range(len_matrix):
-                for j in range(i+1, len_matrix):
-                    indexes.append((i, j))
+        indices = []
+        for i in range(len_matrix):
+            for j in range(i+1, len_matrix):
+                indices.append((i, j))
 
-            random.shuffle(indexes)
-            yield from indexes
-
-        checked = set()
-        for idxs in itertools.product(one_random_matrix_idx_generator(len_matrix), repeat=repeat):
-            idxs = tuple(sorted(idxs))
-            # sample without replacement
-            if len(set(idxs)) != len(idxs):
-                continue
-            if tuple(sorted(idxs)) in checked:
-                continue
-            checked.add(idxs)
-            yield idxs
+        random.shuffle(indices)
+        return indices[:repeat]
 
     def _random_op_generator(self, ops, repeat):
-        def one_random_op_generator(ops):
-            op_pairs = []
+        assert repeat <= len(ops)-2
 
-            # exclude INPUT, OUTPUT node
-            for idx, op in enumerate(ops[1:-1], start=1):
-                new_ops = list(self.operations - set(op))
-                op_pairs.extend([(idx, new_op) for new_op in new_ops])
+        indices = list(range(1,len(ops)-1))
+        random.shuffle(indices)
 
-            random.shuffle(op_pairs)
-            yield from op_pairs
+        op_pairs = []
+        # exclude INPUT, OUTPUT node
+        for idx in indices[:repeat]:
+            new_ops = list(self.operations - set(ops[idx]))
+            new_op = random.choice(new_ops)
+            op_pairs.append((idx, new_op))
 
-        checked = set()
-        for op_pairs in itertools.product(one_random_op_generator(ops), repeat=repeat):
-            op_pairs = tuple(sorted(op_pairs))
-            idxs = [op_pair[0] for op_pair in op_pairs]
-            # sample without replacement
-            if len(set(idxs)) != len(idxs):
-                continue
-            if tuple(sorted(op_pairs)) in checked:
-                continue
-            checked.add(op_pairs)
-            yield op_pairs
+        return op_pairs
 
-    def _generate_edit_edge_models(self, original_matrix, ops, edit_distance, count):
-        generated_count = 0
-
+    def _generate_edit_edge_model(self, original_matrix, ops, edit_distance):
         len_matrix = len(original_matrix)
-        for matrix_idxs in self._random_matrix_idx_generator(len_matrix, repeat=edit_distance):
-            if generated_count >= count:
-                raise StopIteration
+        ## TODO
+        # what if there is no possible model with edit-distance={edit_distance}?
+        # proper nubmer of max_tries?
+        # set with yaml? or depends on edit_distance?
+        max_tries = 1
+        for time in range(edit_distance):
+            max_tries *= (len_matrix - time) / (time + 1)
 
+        for _ in range(int(max_tries)):
             matrix = original_matrix.copy()
-            for idx in matrix_idxs:
-                matrix[idx] = 1 - matrix[idx]
+            matrix_idxs = self._random_matrix_idx_generator(len_matrix, repeat=edit_distance)
+            row = [idx[0] for idx in matrix_idxs]
+            col = [idx[1] for idx in matrix_idxs]
+            matrix[row, col] = 1 - matrix[row, col]
 
-            fake_ops = ["input"] + [self.operations[0]] * (len_matrix-2) + ["output"]
+            fake_ops = ["input"] + [list(self.operations)[0]] * (len_matrix-2) + ["output"]
             if self.validate(matrix, fake_ops):
-                generated_count += 1
-                yield (matrix, ops)
+                return (matrix, ops)
+        raise NoValidModelExcpetion(f"edit_distance={edit_distance}", original_matrix)
 
-    def _generate_edit_node_models(self, matrix, original_ops, edit_distance, count):
-        choices = self._random_op_generator(original_ops, repeat=edit_distance)
+    def _generate_edit_node_model(self, matrix, original_ops, edit_distance):
+        op_pairs = self._random_op_generator(original_ops, repeat=edit_distance)
+        ops = original_ops.copy()
+        for idx, op in op_pairs:
+            ops[idx] = op
+        return (matrix, ops)
 
-        for generated_count, op_pairs in enumerate(choices):
-            if generated_count >= count:
-                raise StopIteration
-            ops = original_ops.copy()
-            for idx, op in op_pairs:
-                ops[idx] = op
-            yield (matrix, ops)
+    def get_delete_one_node_model(self, original_matrix, original_ops):
+        inwards = np.sum(original_matrix, axis=0)
+        outwards = np.sum(original_matrix, axis=1)
+        indices = np.where((inwards + outwards) == 2)[0]
+        random.shuffle(indices)
 
-    def get_delete_one_node_models(self, original_matrix, original_ops, count):
-
-        def to_hashable(obj):
-            obj = np.array(obj)
-            return tuple(obj.reshape(1, -1)[0])
-
-        def get_delete_node_matrix(original_matrix, idx):
+        for idx in indices:
             matrix = original_matrix.copy()
             matrix = np.delete(matrix, idx, axis=0)
             matrix = np.delete(matrix, idx, axis=1)
-            return matrix
+            ops = [op for op_idx, op in enumerate(original_ops) if op_idx != idx]
+            if self.validate(matrix, ops):
+                return (matrix, ops)
 
-        def delete_one_node_model_generator(original_matrix, original_ops):
-            generated = list()
-            for idx in range(1, len(original_ops)):
-                # find node that has two edges
-                if (np.sum(original_matrix[idx]) + np.sum(original_matrix[:, idx])) == 2:
-                    matrix = get_delete_node_matrix(original_matrix, idx)
-                    ops = [op for op_idx, op in enumerate(
-                        original_ops) if op_idx != idx]
-                    if not self.validate(matrix, ops):
-                        continue
-                    if (to_hashable(matrix), to_hashable(ops)) in generated:
-                        continue
-                    generated.append((matrix, ops))
+        raise NoValidModelExcpetion("one-node deleted", original_matrix, original_ops)
 
-            random.shuffle(generated)
-            yield from generated
+    def generate_edit_distance_one_model(self, matrix, ops):
+        modify_options = [self._generate_edit_node_model, self._generate_edit_edge_model]
+        return random.choice(modify_options)(matrix, ops, edit_distance=1)
 
-        for generated_count, (matrix, ops) in enumerate(delete_one_node_model_generator(original_matrix, original_ops)):
-            if generated_count >= count:
+    def generate_edit_distance_two_model(self, matrix, ops):
+        choice = random.choice(range(3))
+        if choice == 0:
+            # replace 2 node
+            return self._generate_edit_node_model(matrix, ops, edit_distance=2)
+        elif choice == 1:
+            # replace 1 node + edit 1 edge
+            new_matrix, _ = self._generate_edit_node_model(matrix, ops, edit_distance=1)
+            _, new_ops = self._generate_edit_edge_model(matrix, ops, edit_distance=1)
+            return (new_matrix, new_ops)
+        else:
+            # edit 2 edge
+            return self._generate_edit_edge_model(matrix, ops, edit_distance=2)
+
+    def generate_edit_distance_three_model(self, matrix, ops):
+        choice = random.choice(range(4))
+        if choice == 0:
+            return self.get_delete_one_node_model(matrix, ops)
+        elif choice == 1:
+            # replace 3 node
+            return self._generate_edit_node_model(matrix, ops, edit_distance=3)
+        elif choice == 2:
+            # replace 2 node + edit 1 edge
+            new_matrix, _ = self._generate_edit_node_model(matrix, ops, edit_distance=2)
+            _, new_ops = self._generate_edit_edge_model(matrix, ops, edit_distance=1)
+            return (new_matrix, new_ops)
+        elif choice == 3:
+            # replace 1 node + edit 2 edge
+            new_matrix, _ = self._generate_edit_node_model(matrix, ops, edit_distance=1)
+            _, new_ops = self._generate_edit_edge_model(matrix, ops, edit_distance=2)
+            return (new_matrix, new_ops)
+        else:
+            # edit 3 edge
+            return self._generate_edit_edge_model(matrix, ops, edit_distance=3)
+
+    def generate_modified_models(self, matrix, ops):
+        generated_count = 0
+        while True:
+            if generated_count >= self.samples_per_class:
                 raise StopIteration
-            yield (matrix, ops)
-
-    def get_sample_model_count(self, len_nodes, node_replace_count, max_sample_count):
-        if node_replace_count == 0:
-            return 0
-
-        max_model_count = 1
-        for i in range(1, node_replace_count):
-            max_model_count *= (len_nodes - 1 - i) / i
-
-        model_count = random.randint(0, min(max_model_count, max_sample_count))
-        return model_count
-
-    def generate_edit_distance_one_models(self, matrix, ops, count):
-        node_edit_model_count = random.randint(0, min(len(ops)-2, count))
-        edge_edit_model_count = count - node_edit_model_count
-
-        yield from self._generate_edit_node_models(matrix, ops, edit_distance=1, count=node_edit_model_count)
-        yield from self._generate_edit_edge_models(matrix, ops, edit_distance=1, count=edge_edit_model_count)
-
-    def generate_edit_distance_two_models(self, matrix, ops, count):
-        len_nodes = len(ops)
-        two_node_max = int((len_nodes - 2) * (len_nodes - 3) / 2)
-        one_node_max = len_nodes - 2
-        node_node_edit_model_count = random.randint(
-            0, min(two_node_max, count))
-        node_edge_edit_model_count = random.randint(
-            0, min(one_node_max, count - node_node_edit_model_count))
-        edge_edge_edit_model_count = count - \
-            node_edge_edit_model_count - node_node_edit_model_count
-
-        # replace 2 node
-        yield from self._generate_edit_node_models(matrix, ops, edit_distance=2, count=node_node_edit_model_count)
-
-        # replace 1 node + edit 1 edge
-        new_ops_models = self._generate_edit_node_models(
-            matrix, ops, edit_distance=1, count=node_edge_edit_model_count)
-        new_matrixes_models = self._generate_edit_edge_models(
-            matrix, ops, edit_distance=1, count=node_edge_edit_model_count)
-        for (new_matrix, _), (_, new_ops) in zip(new_matrixes_models, new_ops_models):
-            yield (new_matrix, new_ops)
-
-        # edit 2 edge
-        yield from self._generate_edit_edge_models(matrix, ops, edit_distance=2, count=edge_edge_edit_model_count)
-
-    def generate_edit_distance_three_models(self, matrix, ops, count):
-        max_node_replace_count = 3
-
-        # 1 node delete + 2 edges delete
-        node_delete_sample_count = random.randint(0, min(len(ops)-2, count))
-        node_delete_model_count = 0
-        for new_model in self.get_delete_one_node_models(matrix, ops, count=node_delete_sample_count):
-            node_delete_model_count += 1
-            yield new_model
-
-        # node replace + edge edit
-        len_nodes = len(ops)
-        max_sample_count = count - node_delete_model_count
-        for node_replace_count in range(max_node_replace_count):
-            node_replace_sample_count = self.get_sample_model_count(
-                len_nodes, node_replace_count, max_sample_count)
-            max_sample_count -= node_replace_sample_count
-
-            new_ops_models = self._generate_edit_node_models(
-                matrix, ops, edit_distance=node_replace_count, count=node_replace_sample_count)
-            new_matrixes_models = self._generate_edit_edge_models(matrix, ops, edit_distance=(
-                max_node_replace_count-node_replace_count), count=node_replace_sample_count)
-            for (new_matrix, _), (_, new_ops) in zip(new_matrixes_models, new_ops_models):
-                yield (new_matrix, new_ops)
-
-        # sample_model_count = rest of sample count
-        node_replace_count = 3
-        node_replace_sample_count = max_sample_count
-        new_nodes_models = self._generate_edit_node_models(
-            matrix, ops, edit_distance=node_replace_count, count=node_replace_sample_count)
-        for _, new_node in new_nodes_models:
-            yield (matrix, new_node)
-
-    def generate_edited_models(self, matrix, ops):
-        yield from(self.edit_functions[np.random.choice(range(len(self.edit_functions), p=[self.]))])(matrix, ops)
+            generated_count += 1
+            yield self.modify_functions[np.random.choice(range(len(self.modify_functions)), p=self.modify_ratio)](matrix, ops)
