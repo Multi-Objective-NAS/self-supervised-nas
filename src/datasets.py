@@ -22,11 +22,14 @@ class NASBench101(torch.utils.data.IterableDataset):
 
         self.engine = nasbench.api.NASBench(path)
         self.samples_per_class = samples_per_class
-        self.graph_modifier = GraphModifier(validate=self.is_valid, samples_per_class=samples_per_class, **graph_modify_ratio)
+        ## TODO : change operations parameter after nasbench201 api is applied
+        self.graph_modifier = GraphModifier(validate=self.is_valid,
+                                            operations=set(["conv1x1-bn-relu", "conv3x3-bn-relu", "maxpool3x3"]),
+                                             samples_per_class=samples_per_class, **graph_modify_ratio)
 
     def __iter__(self):
         for index, matrix, ops in self._random_graph_generator():
-            for pmatrix, pops in self.graph_modifier.generate_edited_models(matrix, ops):
+            for pmatrix, pops in self.graph_modifier.generate_modified_models(matrix, ops):
                 yield self._encode(pmatrix, pops), index
 
     def __len__(self):

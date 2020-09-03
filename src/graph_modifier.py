@@ -56,10 +56,14 @@ class GraphModifier():
         # what if there is no possible model with edit-distance={edit_distance}?
         # proper nubmer of max_tries?
         # set with yaml? or depends on edit_distance?
-        max_tries = 1
-        for time in range(edit_distance):
-            max_tries *= (len_matrix - time) / (time + 1)
 
+        max_tries = 21 # number of matrix indices in upper triangle
+
+        # max_tries = 1
+        # for time in range(edit_distance):
+        #    max_tries *= (len_matrix - time) / (time + 1)
+
+        fake_ops = ["input"] + [list(self.operations)[0]] * (len_matrix-2) + ["output"]
         for _ in range(int(max_tries)):
             matrix = original_matrix.copy()
             matrix_idxs = self._random_matrix_idx_generator(len_matrix, repeat=edit_distance)
@@ -67,7 +71,6 @@ class GraphModifier():
             col = [idx[1] for idx in matrix_idxs]
             matrix[row, col] = 1 - matrix[row, col]
 
-            fake_ops = ["input"] + [list(self.operations)[0]] * (len_matrix-2) + ["output"]
             if self.validate(matrix, fake_ops):
                 return (matrix, ops)
         raise NoValidModelExcpetion(f"edit_distance={edit_distance}", original_matrix)
@@ -136,8 +139,12 @@ class GraphModifier():
 
     def generate_modified_models(self, matrix, ops):
         generated_count = 0
+        choices = range(len(self.modify_functions))
         while True:
             if generated_count >= self.samples_per_class:
                 raise StopIteration
-            generated_count += 1
-            yield self.modify_functions[np.random.choice(range(len(self.modify_functions)), p=self.modify_ratio)](matrix, ops)
+            try:
+                generated_count += 1
+                yield self.modify_functions[np.random.choice(choices, p=self.modify_ratio)](matrix, ops)
+            except NoValidModelExcpetion:
+                pass
