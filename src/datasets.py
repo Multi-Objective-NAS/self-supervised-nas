@@ -7,7 +7,7 @@ from hydra import utils as hydra_utils
 
 import nasbench
 from libs.SemiNAS.nas_bench import utils as seminas_utils
-
+from .graph_modifier import GraphModifier
 
 def get_dataset(name, **kwargs):
     assert name == 'nasbench101'
@@ -15,17 +15,21 @@ def get_dataset(name, **kwargs):
 
 
 class NASBench101(torch.utils.data.IterableDataset):
-    def __init__(self, path, samples_per_class):
+    def __init__(self, path, samples_per_class, graph_modify_ratio):
         if not pathlib.Path(path).is_absolute():
             path = hydra_utils.to_absolute_path(path)
         assert pathlib.Path(path).exists()
 
         self.engine = nasbench.api.NASBench(path)
         self.samples_per_class = samples_per_class
+        ## TODO : change operations parameter after nasbench201 api is applied
+        self.graph_modifier = GraphModifier(validate=self.is_valid,
+                                            operations=set(["conv1x1-bn-relu", "conv3x3-bn-relu", "maxpool3x3"]),
+                                             samples_per_class=samples_per_class, **graph_modify_ratio)
 
     def __iter__(self):
         for index, matrix, ops in self._random_graph_generator():
-            for pmatrix, pops in self._generate_isomorphic_graphs(matrix, ops):
+            for pmatrix, pops in self.graph_modifier.generate_modified_models(matrix, ops):
                 yield self._encode(pmatrix, pops), index
 
     def __len__(self):
@@ -40,24 +44,11 @@ class NASBench101(torch.utils.data.IterableDataset):
             if matrix.shape[0] == 7:
                 yield (index, matrix, ops)
 
-    def _generate_isomorphic_graphs(self, matrix, ops):
-        vertices = matrix.shape[0]
-        count = 0
-
-        while count < self.samples_per_class:
-            # Permute except first (input) and last (output)
-            perm = np.random.permutation(range(1, vertices-1))
-            perm = np.insert(perm, 0, 0)
-            perm = np.insert(perm, vertices-1, vertices-1)
-
-            pmatrix, pops = nasbench.lib.graph_util.permute_graph(matrix, ops, perm)
-            if self.engine.is_valid(
-                nasbench.api.ModelSpec(matrix=matrix, ops=ops)
-            ):
-                count += 1
-                yield (pmatrix, pops)
-
-        raise StopIteration
-
     def _encode(self, matrix, ops):
         return seminas_utils.convert_arch_to_seq(matrix, ops)
+
+    def is_valid(self, matrix, ops):
+        return self.engine.is_valid(nasbench.api.ModelSpec(
+                matrix=matrix,
+                ops=ops)
+                )
