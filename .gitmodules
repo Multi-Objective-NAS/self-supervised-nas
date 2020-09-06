@@ -1,6 +1,12 @@
 [submodule "libs/SemiNAS"]
 	path = libs/SemiNAS
-	url = https://github.com/Multi-Objective-NAS/SemiNAS
+	url = https://github.com/Multi-Objective-NAS/SemiNAS.git
+	branch = nasbench201
 [submodule "libs/nasbench"]
 	path = libs/nasbench
-	url = https://github.com/google-research/nasbench
+	url = https://github.com/Multi-Objective-NAS/nasbench.git
+	branch=nasbench201
+[submodule "libs/NAS-Bench-201"]
+	path = libs/nasbench201
+	url = https://github.com/Multi-Objective-NAS/NAS-Bench-201.git
+	branch=nasbench201

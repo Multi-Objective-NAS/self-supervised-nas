@@ -1,0 +1,4 @@
+dataset:
+    name: nasbench201
+    path: datasets/nasbench/nasbench201_wo_losses.pth
+    samples_per_class: 8

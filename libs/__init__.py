@@ -2,7 +2,7 @@ import pathlib
 import sys
 
 _paths = [
-    'nasbench',
+    'nasbench', 'nasbench201',
 ]
 
 for p in _paths:
