@@ -7,6 +7,6 @@
 	url = https://github.com/Multi-Objective-NAS/nasbench.git
 	branch=nasbench201
 [submodule "libs/NAS-Bench-201"]
-	path = libs/NAS-Bench-201
+	path = libs/nasbench201
 	url = https://github.com/Multi-Objective-NAS/NAS-Bench-201.git
 	branch=nasbench201

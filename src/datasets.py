@@ -33,10 +33,10 @@ class NASBench(torch.utils.data.IterableDataset):
 
         length = 0
         for index, key in enumerate(engine.hash_iterator()):
-                arch = engine.get_model_spec_by_hash(key)
-                matrix, ops = arch.matrix, arch.ops
-                if matrix.shape[0] == 7:
-                    length += 1
+            arch = engine.get_modelspec_by_hash(key)
+            matrix, ops = arch.matrix, arch.ops
+            if matrix.shape[0] == 7:
+                length += 1
         self._dataset_length = length
 
     def __iter__(self):
@@ -49,7 +49,7 @@ class NASBench(torch.utils.data.IterableDataset):
 
     def _random_graph_generator(self):
         for index, key in enumerate(self.engine.hash_iterator()):
-            arch = self.engine.get_model_spec_by_hash(key)
+            arch = self.engine.get_modelspec_by_hash(key)
             matrix, ops = arch.matrix, arch.ops
             if matrix.shape[0] == 7:
                 yield (index, matrix, ops)
