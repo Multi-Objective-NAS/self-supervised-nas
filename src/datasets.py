@@ -5,7 +5,7 @@ import torch
 import numpy as np
 from hydra import utils as hydra_utils
 
-from libs.nasbench201 import nas_201_api as api201
+from libs.nasbench201.nas_201_api import api_201 as api201
 from libs.nasbench.nasbench import api as api101
 from libs.nasbench.nasbench.lib import graph_util
 from libs.SemiNAS.nas_bench import utils as seminas_utils
