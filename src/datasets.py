@@ -9,11 +9,11 @@ from libs.nasbench201.nas_201_api import api_201 as api201
 from libs.nasbench.nasbench import api as api101
 from libs.nasbench.nasbench.lib import graph_util
 from libs.SemiNAS.nas_bench import utils as seminas_utils
-
+from .graph_modifier import GraphModifier
 
 def get_dataset(name, path, **kwargs):
     assert name == 'nasbench101' or name == 'nasbench201'
-
+    
     if not pathlib.Path(path).is_absolute():
         path = hydra_utils.to_absolute_path(path)
         assert pathlib.Path(path).exists()
@@ -30,7 +30,8 @@ class NASBench(torch.utils.data.IterableDataset):
             
         self.samples_per_class = samples_per_class
         self.search_space = engine.search_space # list of possible operations ex.[ CONV 3x3, MAXPOOL 3x3, ... ]
-
+        
+        # Find dataset length
         length = 0
         for index, key in enumerate(engine.hash_iterator()):
             arch = engine.get_modelspec_by_hash(key)
@@ -38,10 +39,15 @@ class NASBench(torch.utils.data.IterableDataset):
             if matrix.shape[0] == 7:
                 length += 1
         self._dataset_length = length
+        
+        ## TODO : change operations parameter after nasbench201 api is applied
+        self.graph_modifier = GraphModifier(validate=self.is_valid,
+                                            operations=set(["conv1x1-bn-relu", "conv3x3-bn-relu", "maxpool3x3"]),
+                                             samples_per_class=samples_per_class, **graph_modify_ratio)
 
     def __iter__(self):
         for index, matrix, ops in self._random_graph_generator():
-            for pmatrix, pops in self._generate_isomorphic_graphs(matrix, ops):
+            for pmatrix, pops in self.graph_modifier.generate_modified_models(matrix, ops):
                 yield self._encode(pmatrix, pops), index
 
     def __len__(self):
@@ -53,8 +59,9 @@ class NASBench(torch.utils.data.IterableDataset):
             matrix, ops = arch.matrix, arch.ops
             if matrix.shape[0] == 7:
                 yield (index, matrix, ops)
-
+    
     def _generate_isomorphic_graphs(self, matrix, ops):
+        """Substituted by graph_modifier.generate_modified_models"""
         vertices = matrix.shape[0]
         count = 0
 
@@ -74,3 +81,9 @@ class NASBench(torch.utils.data.IterableDataset):
 
     def _encode(self, matrix, ops):
         return seminas_utils.convert_arch_to_seq(matrix, ops, self.search_space)
+
+    def is_valid(self, matrix, ops):
+        return self.engine.is_valid(self.engine.get_modelspec(
+                matrix=matrix,
+                ops=ops)
+                )

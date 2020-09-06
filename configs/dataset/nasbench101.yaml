@@ -2,3 +2,7 @@ dataset:
     name: nasbench101
     path: datasets/nasbench/nasbench_only108.tfrecord
     samples_per_class: 8
+    graph_modify_ratio:
+        edit_distance_one: 1
+        edit_distance_two: 1
+        edit_distance_three: 1
