@@ -1,12 +1,8 @@
 import logging
 
 import torch
-import torch.nn as nn
-import torch.nn.functional as F
 import tqdm
 from pytorch_metric_learning import trainers
-
-from libs.SemiNAS.nas_bench.controller import NAO
 
 
 class GraphEmbeddingTrainer(trainers.MetricLossOnly):
@@ -21,13 +17,13 @@ class GraphEmbeddingTrainer(trainers.MetricLossOnly):
         encoder_input = torch.stack(encoder_input, dim=1).to(0)
         decoder_input = torch.stack(decoder_input, dim=1).to(0)
         labels = labels.to(0)
- 
+
         enc_outputs, _, embeddings, _ = self.models['trunk'].encoder(
             encoder_input)
         dec_hidden = (embeddings.unsqueeze(0), embeddings.unsqueeze(0))
         dec_outputs, _ = self.models['trunk'].decoder(
             decoder_input, dec_hidden, enc_outputs)
- 
+
         indices_tuple = self.maybe_mine_embeddings(embeddings, labels)
         self.losses['metric_loss'] = self.maybe_get_metric_loss(
             embeddings, labels, indices_tuple)
@@ -73,7 +69,7 @@ class GraphEmbeddingTrainer(trainers.MetricLossOnly):
 
     def train(self):
         self.initialize_dataloader()
-        for self.epoch in range(1, self.num_epochs+1):
+        for self.epoch in range(1, self.num_epochs + 1):
             self.set_to_train()
             logging.info("TRAINING EPOCH %d" % self.epoch)
             pbar = tqdm.tqdm(range(self.iterations_per_epoch))
