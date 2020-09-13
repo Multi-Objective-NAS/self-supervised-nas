@@ -1,5 +1,12 @@
 # Environments
 - conda environment configs: `environment.yaml`
+- How to install:
+```bash
+conda env create -f environment.yaml
+conda activate self-supervised-nas-3.6
+pip install -e libs/nasbench --no-deps
+pip install -e libs/NAS-Bench-201
+```
 
 # How to train
 - `CUDA_VISIBLE_DEVICES={device_index} python3 pretrain.py experiment=TripletMarginLoss`
