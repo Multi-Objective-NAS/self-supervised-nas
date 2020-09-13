@@ -26,7 +26,7 @@ def get_dataset(name, path, **kwargs):
 
 
 class NASBench(torch.utils.data.IterableDataset):
-    def __init__(self, engine, samples_per_class):
+    def __init__(self, engine, samples_per_class, graph_modify_ratio):
         self.engine = engine
         self.samples_per_class = samples_per_class
 
@@ -52,7 +52,7 @@ class NASBench(torch.utils.data.IterableDataset):
         for index, matrix, ops in self._random_graph_generator():
             for pmatrix, pops in self.graph_modifier.generate_modified_models(matrix, ops):
                 seq = self._encode(pmatrix, pops)
-                yield seq, [0] + seq[:-1], index
+                yield (seq, [0] + seq[:-1]), index
 
     def __len__(self):
         return self._dataset_length * self.samples_per_class

@@ -17,21 +17,22 @@ class GraphEmbeddingTrainer(trainers.MetricLossOnly):
         self.visualize_scratchpad = {}
 
     def calculate_loss(self, curr_batch):
-        data, labels = curr_batch
-        data = torch.stack(data, dim=1).to(0)
+        (encoder_input, decoder_input), labels = curr_batch
+        encoder_input = torch.stack(encoder_input, dim=1).to(0)
+        decoder_input = torch.stack(decoder_input, dim=1).to(0)
         labels = labels.to(0)
  
         enc_outputs, _, embeddings, _ = self.models['trunk'].encoder(
-            data)
+            encoder_input)
         dec_hidden = (embeddings.unsqueeze(0), embeddings.unsqueeze(0))
         dec_outputs, _ = self.models['trunk'].decoder(
-            data, dec_hidden, enc_outputs)
+            decoder_input, dec_hidden, enc_outputs)
  
         indices_tuple = self.maybe_mine_embeddings(embeddings, labels)
         self.losses['metric_loss'] = self.maybe_get_metric_loss(
             embeddings, labels, indices_tuple)
         self.losses['reconstruction_loss'] = self.get_reconstruction_loss(
-            dec_outputs, data)
+            dec_outputs, encoder_input)
 
         if self.iteration % self.visualize_step == 0:
             self.visualize_scratchpad['embeddings'] = embeddings.detach().cpu()
