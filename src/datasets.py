@@ -1,13 +1,12 @@
-import itertools
 import pathlib
 
-import torch
-import numpy as np
 from hydra import utils as hydra_utils
+import numpy as np
+import torch
 
-from nas_201_api import api_201 as api201
 from nasbench import api as api101
 from nasbench.lib import graph_util
+from nas_201_api import api_201 as api201
 from libs.SemiNAS.nas_bench import utils as seminas_utils
 from .graph_modifier import GraphModifier
 
@@ -46,7 +45,8 @@ class NASBench(torch.utils.data.IterableDataset):
         self.graph_modifier = GraphModifier(validate=self.is_valid,
                                             operations=set(
                                                 ["conv1x1-bn-relu", "conv3x3-bn-relu", "maxpool3x3"]),
-                                            samples_per_class=samples_per_class, **graph_modify_ratio)
+                                            samples_per_class=samples_per_class,
+                                            **graph_modify_ratio)
 
     def __iter__(self):
         for index, matrix, ops in self._random_graph_generator():
@@ -71,9 +71,9 @@ class NASBench(torch.utils.data.IterableDataset):
 
         while count < self.samples_per_class:
             # Permute except first (input) and last (output)
-            perm = np.random.permutation(range(1, vertices-1))
+            perm = np.random.permutation(range(1, vertices - 1))
             perm = np.insert(perm, 0, 0)
-            perm = np.insert(perm, vertices-1, vertices-1)
+            perm = np.insert(perm, vertices - 1, vertices - 1)
 
             pmatrix, pops = graph_util.permute_graph(matrix, ops, perm)
             modelspec = self.engine.get_modelspec(matrix=matrix, ops=ops)

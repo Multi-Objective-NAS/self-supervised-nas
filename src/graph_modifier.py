@@ -18,7 +18,7 @@ class GraphModifier():
         self.validate = validate
         self.operations = operations
         self.samples_per_class = samples_per_class
-        
+
         total = edit_distance_one + edit_distance_two + edit_distance_three
         edit_distance_one = edit_distance_one / total
         edit_distance_two = edit_distance_two / total
@@ -29,16 +29,16 @@ class GraphModifier():
     def _random_matrix_idx_generator(self, len_matrix, repeat):
         indices = []
         for i in range(len_matrix):
-            for j in range(i+1, len_matrix):
+            for j in range(i + 1, len_matrix):
                 indices.append((i, j))
 
         random.shuffle(indices)
         return indices[:repeat]
 
     def _random_op_generator(self, ops, repeat):
-        assert repeat <= len(ops)-2
+        assert repeat <= len(ops) - 2
 
-        indices = list(range(1,len(ops)-1))
+        indices = list(range(1, len(ops) - 1))
         random.shuffle(indices)
 
         op_pairs = []
@@ -53,9 +53,9 @@ class GraphModifier():
     def _generate_edit_edge_model(self, original_matrix, ops, edit_distance):
         len_matrix = len(original_matrix)
 
-        max_tries = 21 # number of matrix indices in upper triangle
+        max_tries = 21  # number of matrix indices in upper triangle
 
-        fake_ops = ["input"] + [list(self.operations)[0]] * (len_matrix-2) + ["output"]
+        fake_ops = ["input"] + [list(self.operations)[0]] * (len_matrix - 2) + ["output"]
         for _ in range(int(max_tries)):
             matrix = original_matrix.copy()
             matrix_idxs = self._random_matrix_idx_generator(len_matrix, repeat=edit_distance)

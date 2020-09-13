@@ -1,12 +1,8 @@
 import logging
 
 import torch
-import torch.nn as nn
-import torch.nn.functional as F
 import tqdm
 from pytorch_metric_learning import trainers
-
-from libs.SemiNAS.nas_bench.controller import NAO
 
 
 class GraphEmbeddingTrainer(trainers.MetricLossOnly):
@@ -73,7 +69,7 @@ class GraphEmbeddingTrainer(trainers.MetricLossOnly):
 
     def train(self):
         self.initialize_dataloader()
-        for self.epoch in range(1, self.num_epochs+1):
+        for self.epoch in range(1, self.num_epochs + 1):
             self.set_to_train()
             logging.info("TRAINING EPOCH %d" % self.epoch)
             pbar = tqdm.tqdm(range(self.iterations_per_epoch))
