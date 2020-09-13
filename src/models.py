@@ -17,13 +17,13 @@ class GraphEmbeddingTrainer(trainers.MetricLossOnly):
         encoder_input = torch.stack(encoder_input, dim=1).to(0)
         decoder_input = torch.stack(decoder_input, dim=1).to(0)
         labels = labels.to(0)
- 
+
         enc_outputs, _, embeddings, _ = self.models['trunk'].encoder(
             encoder_input)
         dec_hidden = (embeddings.unsqueeze(0), embeddings.unsqueeze(0))
         dec_outputs, _ = self.models['trunk'].decoder(
             decoder_input, dec_hidden, enc_outputs)
- 
+
         indices_tuple = self.maybe_mine_embeddings(embeddings, labels)
         self.losses['metric_loss'] = self.maybe_get_metric_loss(
             embeddings, labels, indices_tuple)
