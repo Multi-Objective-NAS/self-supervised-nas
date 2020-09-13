@@ -52,16 +52,8 @@ class GraphModifier():
 
     def _generate_edit_edge_model(self, original_matrix, ops, edit_distance):
         len_matrix = len(original_matrix)
-        ## TODO
-        # what if there is no possible model with edit-distance={edit_distance}?
-        # proper nubmer of max_tries?
-        # set with yaml? or depends on edit_distance?
 
         max_tries = 21 # number of matrix indices in upper triangle
-
-        # max_tries = 1
-        # for time in range(edit_distance):
-        #    max_tries *= (len_matrix - time) / (time + 1)
 
         fake_ops = ["input"] + [list(self.operations)[0]] * (len_matrix-2) + ["output"]
         for _ in range(int(max_tries)):
@@ -109,8 +101,8 @@ class GraphModifier():
             return self._generate_edit_node_model(matrix, ops, edit_distance=2)
         elif choice == 1:
             # replace 1 node + edit 1 edge
-            new_matrix, _ = self._generate_edit_node_model(matrix, ops, edit_distance=1)
-            _, new_ops = self._generate_edit_edge_model(matrix, ops, edit_distance=1)
+            new_matrix, _ = self._generate_edit_edge_model(matrix, ops, edit_distance=1)
+            _, new_ops = self._generate_edit_node_model(matrix, ops, edit_distance=1)
             return (new_matrix, new_ops)
         else:
             # edit 2 edge
@@ -125,13 +117,13 @@ class GraphModifier():
             return self._generate_edit_node_model(matrix, ops, edit_distance=3)
         elif choice == 2:
             # replace 2 node + edit 1 edge
-            new_matrix, _ = self._generate_edit_node_model(matrix, ops, edit_distance=2)
-            _, new_ops = self._generate_edit_edge_model(matrix, ops, edit_distance=1)
+            new_matrix, _ = self._generate_edit_edge_model(matrix, ops, edit_distance=1)
+            _, new_ops = self._generate_edit_node_model(matrix, ops, edit_distance=2)
             return (new_matrix, new_ops)
         elif choice == 3:
             # replace 1 node + edit 2 edge
-            new_matrix, _ = self._generate_edit_node_model(matrix, ops, edit_distance=1)
-            _, new_ops = self._generate_edit_edge_model(matrix, ops, edit_distance=2)
+            new_matrix, _ = self._generate_edit_edge_model(matrix, ops, edit_distance=2)
+            _, new_ops = self._generate_edit_node_model(matrix, ops, edit_distance=1)
             return (new_matrix, new_ops)
         else:
             # edit 3 edge
