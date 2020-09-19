@@ -19,14 +19,15 @@ def get_dataset(name, path, **kwargs):
         assert pathlib.Path(path).exists()
 
     if name == 'nasbench101':
-        return NASBench(engine=api101.NASBench(path), **kwargs)
+        return NASBench(engine=api101.NASBench(path), ModelSpec=api101.ModelSpec, **kwargs)
     elif name == 'nasbench201':
-        return NASBench(engine=api201.NASBench201API(path), **kwargs)
+        return NASBench(engine=api201.NASBench201API(path), ModelSpec=api101.ModelSpec, **kwargs)
 
 
 class NASBench(torch.utils.data.IterableDataset):
-    def __init__(self, engine, samples_per_class, graph_modify_ratio):
+    def __init__(self, engine, ModelSpec, samples_per_class, graph_modify_ratio):
         self.engine = engine
+        self.ModelSpec = ModelSpec
         self.samples_per_class = samples_per_class
 
         # list of possible operations ex.[ CONV 3x3, MAXPOOL 3x3, ... ]
@@ -41,10 +42,9 @@ class NASBench(torch.utils.data.IterableDataset):
                 length += 1
         self._dataset_length = length
 
-        # TODO : change operations parameter after nasbench201 api is applied
         self.graph_modifier = GraphModifier(
             validate=self.is_valid,
-            operations=set(["conv1x1-bn-relu", "conv3x3-bn-relu", "maxpool3x3"]),
+            operations=set(self.search_space) - set(["input", "ouput"]),
             samples_per_class=samples_per_class,
             **graph_modify_ratio)
 
@@ -86,9 +86,12 @@ class NASBench(torch.utils.data.IterableDataset):
     def _encode(self, matrix, ops):
         return seminas_utils.convert_arch_to_seq(matrix, ops, self.search_space)
 
-    # TODO: move to api101, api201
     def is_valid(self, matrix, ops):
-        model_spec = api101.ModelSpec(matrix=matrix, ops=ops)
-        return (model_spec.ops is not None) \
-            and (len(model_spec.ops) == len(ops)) \
-            and self.engine.is_valid(model_spec)
+        model_spec = self.ModelSpec(matrix=matrix, ops=ops)
+        if not model_spec.valid_spec:
+            return False
+        if model_spec.ops != ops:
+            return False
+        if (model_spec.matrix != matrix).any():
+            return False
+        return self.engine.is_valid(model_spec)
