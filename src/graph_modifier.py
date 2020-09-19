@@ -35,18 +35,20 @@ class GraphModifier():
             for j in range(i + 1, len_matrix):
                 indices.append((i, j))
 
-        random.shuffle(indices)
-        return indices[:repeat]
+        if repeat > len(indices):
+            raise NoValidModelExcpetion(f"repeat: {repeat} matrix length: {len_matrix}")
+
+        return random.sample(indices, repeat)
 
     def _random_op_generator(self, ops, repeat):
-        assert repeat <= len(ops) - 2
+        if repeat > (len(ops) - 2):
+            raise NoValidModelExcpetion(f"repeat: {repeat} ops length: {len(ops)}")
 
         indices = list(range(1, len(ops) - 1))
-        random.shuffle(indices)
 
         op_pairs = []
         # exclude INPUT, OUTPUT node
-        for idx in indices[:repeat]:
+        for idx in random.sample(indices, repeat):
             new_ops = list(self.operations - set(ops[idx]))
             new_op = random.choice(new_ops)
             op_pairs.append((idx, new_op))
