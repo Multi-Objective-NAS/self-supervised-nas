@@ -142,8 +142,6 @@ class GraphModifier():
         return (matrix, ops)
 
     def generate_modified_models(self, matrix, ops):
-
         for _ in range(self.samples_per_class):
             yield self._try_modify_graph(matrix, ops)
-
         raise StopIteration

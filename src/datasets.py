@@ -19,15 +19,15 @@ def get_dataset(name, path, **kwargs):
         assert pathlib.Path(path).exists()
 
     if name == 'nasbench101':
-        return NASBench(engine=api101.NASBench(path), ModelSpec=api101.ModelSpec, **kwargs)
+        return NASBench(engine=api101.NASBench(path), model_spec=api101.ModelSpec, **kwargs)
     elif name == 'nasbench201':
-        return NASBench(engine=api201.NASBench201API(path), ModelSpec=api101.ModelSpec, **kwargs)
+        return NASBench(engine=api201.NASBench201API(path), model_spec=api101.ModelSpec, **kwargs)
 
 
 class NASBench(torch.utils.data.IterableDataset):
-    def __init__(self, engine, ModelSpec, samples_per_class, graph_modify_ratio):
+    def __init__(self, engine, model_spec, samples_per_class, graph_modify_ratio):
         self.engine = engine
-        self.ModelSpec = ModelSpec
+        self.model_spec = model_spec
         self.samples_per_class = samples_per_class
 
         # list of possible operations ex.[ CONV 3x3, MAXPOOL 3x3, ... ]
@@ -87,11 +87,11 @@ class NASBench(torch.utils.data.IterableDataset):
         return seminas_utils.convert_arch_to_seq(matrix, ops, self.search_space)
 
     def is_valid(self, matrix, ops):
-        model_spec = self.ModelSpec(matrix=matrix, ops=ops)
-        if not model_spec.valid_spec:
+        model = self.model_spec(matrix=matrix, ops=ops)
+        if not model.valid_spec:
             return False
-        if model_spec.ops != ops:
+        if model.ops != ops:
             return False
-        if (model_spec.matrix != matrix).any():
+        if (model.matrix != matrix).any():
             return False
-        return self.engine.is_valid(model_spec)
+        return self.engine.is_valid(model)
