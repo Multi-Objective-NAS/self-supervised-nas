@@ -2,6 +2,9 @@ import random
 
 import numpy as np
 
+MAX_EDGE_EDIT_TRY = 21
+MAX_GRAPH_MODIFY_TRY = 3
+
 
 class NoValidModelExcpetion(Exception):
     def __init__(self, *args):
@@ -53,7 +56,7 @@ class GraphModifier():
     def _generate_edit_edge_model(self, original_matrix, ops, edit_distance):
         len_matrix = len(original_matrix)
 
-        max_tries = 21  # number of matrix indices in upper triangle
+        max_tries = MAX_EDGE_EDIT_TRY  # number of matrix indices in upper triangle
 
         fake_ops = ["input"] + [list(self.operations)[0]] * (len_matrix - 2) + ["output"]
         for _ in range(int(max_tries)):
@@ -129,14 +132,16 @@ class GraphModifier():
             # edit 3 edge
             return self._generate_edit_edge_model(matrix, ops, edit_distance=3)
 
-    def generate_modified_models(self, matrix, ops):
-        generated_count = 0
+    def _try_modify_graph(self, matrix, ops):
         choices = range(len(self.modify_functions))
-        while True:
-            if generated_count >= self.samples_per_class:
-                raise StopIteration
+        for _ in range(MAX_GRAPH_MODIFY_TRY):
             try:
-                generated_count += 1
-                yield self.modify_functions[np.random.choice(choices, p=self.modify_ratio)](matrix, ops)
+                return self.modify_functions[np.random.choice(choices, p=self.modify_ratio)](matrix, ops)
             except NoValidModelExcpetion:
                 pass
+        return (matrix, ops)
+
+    def generate_modified_models(self, matrix, ops):
+        for _ in range(self.samples_per_class):
+            yield self._try_modify_graph(matrix, ops)
+        raise StopIteration
