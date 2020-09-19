@@ -29,26 +29,26 @@ class GraphModifier():
         self.modify_ratio = [edit_distance_one, edit_distance_two, edit_distance_three]
         self.modify_functions = [self.generate_edit_distance_one_model, self.generate_edit_distance_two_model, self.generate_edit_distance_three_model]
 
-    def _random_matrix_idx_generator(self, len_matrix, repeat):
+    def _random_matrix_idx_generator(self, len_matrix, count):
         indices = []
         for i in range(len_matrix):
             for j in range(i + 1, len_matrix):
                 indices.append((i, j))
 
-        if repeat > len(indices):
-            raise NoValidModelExcpetion(f"repeat: {repeat} matrix length: {len_matrix}")
+        if count > len(indices):
+            raise NoValidModelExcpetion(f"edit_distnace: {count} matrix length: {len_matrix}")
 
-        return random.sample(indices, repeat)
+        return random.sample(indices, count)
 
-    def _random_op_generator(self, ops, repeat):
-        if repeat > (len(ops) - 2):
-            raise NoValidModelExcpetion(f"repeat: {repeat} ops length: {len(ops)}")
+    def _random_op_generator(self, ops, count):
+        if count > (len(ops) - 2):
+            raise NoValidModelExcpetion(f"edit_distance: {count} ops length: {len(ops)}")
 
         indices = list(range(1, len(ops) - 1))
 
         op_pairs = []
         # exclude INPUT, OUTPUT node
-        for idx in random.sample(indices, repeat):
+        for idx in random.sample(indices, count):
             new_ops = list(self.operations - set(ops[idx]))
             new_op = random.choice(new_ops)
             op_pairs.append((idx, new_op))
@@ -63,7 +63,7 @@ class GraphModifier():
         fake_ops = ["input"] + [list(self.operations)[0]] * (len_matrix - 2) + ["output"]
         for _ in range(int(max_tries)):
             matrix = original_matrix.copy()
-            matrix_idxs = self._random_matrix_idx_generator(len_matrix, repeat=edit_distance)
+            matrix_idxs = self._random_matrix_idx_generator(len_matrix, count=edit_distance)
             row = [idx[0] for idx in matrix_idxs]
             col = [idx[1] for idx in matrix_idxs]
             matrix[row, col] = 1 - matrix[row, col]
@@ -73,7 +73,7 @@ class GraphModifier():
         raise NoValidModelExcpetion(f"edit_distance={edit_distance}", original_matrix)
 
     def _generate_edit_node_model(self, matrix, original_ops, edit_distance):
-        op_pairs = self._random_op_generator(original_ops, repeat=edit_distance)
+        op_pairs = self._random_op_generator(original_ops, count=edit_distance)
         ops = original_ops.copy()
         for idx, op in op_pairs:
             ops[idx] = op

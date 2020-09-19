@@ -1,14 +1,15 @@
 import random
 import unittest
 
-import numpy as np
 from nasbench import api as api101
+import networkx as nx
+import numpy as np
 
 from src.datasets import NASBench
 from src.graph_modifier import GraphModifier, NoValidModelExcpetion
 
 NASBENCH_101_DATASET = "../datasets/nasbench/nasbench_only108.tfrecord"
-TESTCASE_COUNT = 20
+TESTCASE_COUNT = 200
 
 
 class GraphModifierTest(unittest.TestCase):
@@ -45,20 +46,31 @@ class GraphModifierTest(unittest.TestCase):
             matrix, ops = arch.matrix, arch.ops
             cls.testcases.append((matrix, ops))
 
-    def is_eqaul(self, original, variant):
-        return (np.array(original) == np.array(variant)).all()
+    def get_edit_distance(self, matrix1, ops1, matrix2, ops2):
 
-    def get_edit_distance(self, original, variant):
-        return np.sum(np.array(original) != np.array(variant))
+        def to_nx_graph(self, matrix, ops):
+            G = nx.from_numpy_array(matrix, create_using=nx.DiGraph)
+            for idx, op in enumerate(ops):
+                G.add_node(idx, operation=op)
+            return G
+
+        def node_match(node1, node2):
+            return node1["operation"] == node2["operation"]
+
+        def edge_match(edge1, edge2):
+            return edge1 == edge2
+
+        G1 = to_nx_graph(matrix1, ops1)
+        G2 = to_nx_graph(matrix2, ops2)
+
+        return nx.graph_edit_distance(G1, G2, node_match=node_match, edge_match=edge_match)
 
     def test_edit_node_with_random_graphs(self):
         for edit_distance in range(1, 4):
             for matrix, ops in enumerate(self.testcases):
                 try:
                     new_matrix, new_ops = self.graph_modifier._generate_edit_node_model(matrix, ops, edit_distance)
-                    self.assertTrue(self.is_eqaul(matrix, new_matrix))
-                    self.assertFalse(self.is_eqaul(ops, new_ops))
-                    self.assertTrue(self.get_edit_distance(ops, new_ops) == edit_distance)
+                    self.assertTrue(self.get_edit_distance(matrix, ops, new_matrix, new_ops) == edit_distance)
                 except NoValidModelExcpetion:
                     pass
 
@@ -67,9 +79,7 @@ class GraphModifierTest(unittest.TestCase):
             for matrix, ops in enumerate(self.testcases):
                 try:
                     new_matrix, new_ops = self.graph_modifier._generate_edit_edge_model(matrix, ops, edit_distance)
-                    self.assertFalse(self.is_eqaul(matrix, new_matrix))
-                    self.assertTrue(self.is_eqaul(ops, new_ops))
-                    self.assertTrue(self.get_edit_distance(matrix, new_matrix) == edit_distance)
+                    self.assertTrue(self.get_edit_distance(matrix, ops, new_matrix, new_ops) == edit_distance)
                 except NoValidModelExcpetion:
                     pass
 
@@ -90,10 +100,10 @@ class GraphModifierTest(unittest.TestCase):
         with self.assertRaises(NoValidModelExcpetion):
             self.graph_modifier._generate_edit_edge_model(matrix, ops, edit_distance)
 
-        for edit_distance in range(2, 4):
-            matrix, ops = self.model_size3
-            with self.assertRaises(NoValidModelExcpetion):
-                self.graph_modifier._generate_edit_edge_model(matrix, ops, edit_distance)
+        edit_distance = 2
+        matrix, ops = self.model_size3
+        with self.assertRaises(NoValidModelExcpetion):
+            self.graph_modifier._generate_edit_edge_model(matrix, ops, edit_distance)
 
         edit_distance = 3
         matrix, ops = self.model_size4
