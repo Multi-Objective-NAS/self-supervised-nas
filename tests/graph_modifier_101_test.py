@@ -11,6 +11,7 @@ from src.graph_modifier import GraphModifier, NoValidModelExcpetion
 
 NASBENCH_101_DATASET = "/home/dzzp/workspace/dataset/test3000.tfrecord"
 TESTCASE_COUNT = 200
+EDIT_DISTANCE = 3
 
 
 class GraphModifierTest(unittest.TestCase):
@@ -121,3 +122,11 @@ class GraphModifierTest(unittest.TestCase):
         matrix, ops = self.model_size4
         with self.assertRaises(NoValidModelExcpetion):
             self.graph_modifier._generate_edit_node_model(matrix, ops, edit_distance)
+
+    def test_genereate_modified_models_with_random_graphs(self):
+        for matrix, ops in self.testcases:
+            try:
+                for new_matrix, new_ops in self.graph_modifier.generate_modified_models(matrix, ops):
+                    self.assertTrue(self.get_edit_distance(matrix, ops, new_matrix, new_ops) <= EDIT_DISTANCE)
+            except NoValidModelExcpetion:
+                pass
