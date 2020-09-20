@@ -36,7 +36,7 @@ class GraphModifier():
                 indices.append((i, j))
 
         if count > len(indices):
-            raise NoValidModelExcpetion(f"edit_distnace: {count} matrix length: {len_matrix}")
+            raise NoValidModelExcpetion(f"edit_distance: {count} matrix length: {len_matrix}")
 
         return random.sample(indices, count)
 
@@ -49,7 +49,7 @@ class GraphModifier():
         op_pairs = []
         # exclude INPUT, OUTPUT node
         for idx in random.sample(indices, count):
-            new_ops = list(self.operations - set(ops[idx]))
+            new_ops = list(self.operations - set([ops[idx]]))
             new_op = random.choice(new_ops)
             op_pairs.append((idx, new_op))
 
@@ -60,7 +60,6 @@ class GraphModifier():
 
         max_tries = MAX_EDGE_EDIT_TRY  # number of matrix indices in upper triangle
 
-        fake_ops = ["input"] + [list(self.operations)[0]] * (len_matrix - 2) + ["output"]
         for _ in range(int(max_tries)):
             matrix = original_matrix.copy()
             matrix_idxs = self._random_matrix_idx_generator(len_matrix, count=edit_distance)
@@ -68,7 +67,7 @@ class GraphModifier():
             col = [idx[1] for idx in matrix_idxs]
             matrix[row, col] = 1 - matrix[row, col]
 
-            if self.validate(matrix, fake_ops):
+            if self.validate(matrix, ops):
                 return (matrix, ops)
         raise NoValidModelExcpetion(f"edit_distance={edit_distance}", original_matrix)
 

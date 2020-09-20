@@ -44,7 +44,7 @@ class NASBench(torch.utils.data.IterableDataset):
 
         self.graph_modifier = GraphModifier(
             validate=self.is_valid,
-            operations=set(self.search_space) - set(["input", "ouput"]),
+            operations=set(self.search_space),
             samples_per_class=samples_per_class,
             **graph_modify_ratio)
 
