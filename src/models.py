@@ -39,12 +39,12 @@ class GraphEmbeddingTrainer(trainers.MetricLossOnly):
         self.dataloader = torch.utils.data.DataLoader(
             self.dataset,
             batch_size=int(self.batch_size),
-            sampler=self.sampler,
+            sampler=None,
             drop_last=True,
-            num_workers=self.dataloader_num_workers,
-            collate_fn=self.collate_fn,
+            num_workers=1,
+            collate_fn=None,
             shuffle=False,
-            pin_memory=False
+            pin_memory=False,
         )
         if not self.iterations_per_epoch:
             self.iterations_per_epoch = len(self.dataloader) // self.batch_size
