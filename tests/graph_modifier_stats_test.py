@@ -15,7 +15,7 @@ TESTCASE_COUNT = 200
 SAMPLES_PER_CLASS = 200
 EDIT_DISTANCE = 3
 
-MIN_CORRECT_RATIO = 0.9
+MIN_ACCURACY = 0.9
 MIN_DIFF = 0.05
 
 GRAPH_MODIFY_RATIO = OrderedDict({
@@ -67,19 +67,19 @@ class GraphModifierStatsTest(unittest.TestCase):
 
         return nx.graph_edit_distance(G1, G2, node_match=node_match, edge_match=edge_match)
 
-    def stats(self, function_to_test, edit_distance_list):
+    def check_accuracy(self, function_to_test, edit_distance_list, title=None):
         stats_df = pd.DataFrame([[0] * 5] * len(edit_distance_list), columns=[0, 1, 2, 3, -1])
         stats_df["target_edit_distance"] = edit_distance_list
         stats_df = stats_df.set_index("target_edit_distance")
 
-        correct_ratios = []
+        accuracies = []
         for edit_distance in edit_distance_list:
             counts = defaultdict(int)
             for matrix, ops in self.testcases:
                 try:
                     new_matrix, new_ops = function_to_test(matrix, ops, edit_distance)
-                    output_edit_distnace = self.get_edit_distance(matrix, ops, new_matrix, new_ops)
-                    counts[output_edit_distnace] += 1
+                    output_edit_distance = self.get_edit_distance(matrix, ops, new_matrix, new_ops)
+                    counts[output_edit_distance] += 1
                 except NoValidModelExcpetion:
                     counts[-1] += 1
 
@@ -87,38 +87,39 @@ class GraphModifierStatsTest(unittest.TestCase):
                 stats_df.loc[edit_distance, output_edit_distance] = count
 
         for edit_distance in edit_distance_list:
-            correct_ratios.append(stats_df.loc[edit_distance, edit_distance] / TESTCASE_COUNT)
+            accuracies.append(stats_df.loc[edit_distance, edit_distance] / len(self.testcases))
 
-        stats_df["correct_ratio"] = correct_ratios
+        stats_df["accuracy"] = accuracies
 
-        logger.info(f"[STATS] {function_to_test.__name__}")
+        if not title:
+            title = function_to_test.__name__
+        logger.info(f"[STATS] {title}")
         logger.info(f"\n{stats_df.to_string()}")
         logger.info("\n\n\n")
 
         for ed in edit_distance_list:
-            self.assertGreaterEqual(stats_df.loc[ed, "correct_ratio"], MIN_CORRECT_RATIO)
+            self.assertGreaterEqual(stats_df.loc[ed, "accuracy"], MIN_ACCURACY)
 
-    def stats_moddifier(self):
+    def check_accuracy_modifier(self):
         stats_df = pd.DataFrame([[0] * 5] * 3, columns=[0, 1, 2, 3, -1], index=["count", "target_ratio", "output_ratio"])
 
         counts = defaultdict(int)
         matrix, ops = self.testcases[0]
         for new_matrix, new_ops in self.graph_modifier.generate_modified_models(matrix, ops):
             try:
-                output_edit_distnace = self.get_edit_distance(matrix, ops, new_matrix, new_ops)
-                counts[output_edit_distnace] += 1
+                output_edit_distance = self.get_edit_distance(matrix, ops, new_matrix, new_ops)
+                counts[output_edit_distance] += 1
             except NoValidModelExcpetion:
                 counts[-1] += 1
 
-        ratio_sum = sum(GRAPH_MODIFY_RATIO.values())
-        TARGET_RATIO = defaultdict(int)
-        for k, v in enumerate(GRAPH_MODIFY_RATIO.values(), start=1):
-            TARGET_RATIO[k] = v / ratio_sum
-
+        TARGET_RATIO = {
+            i: v / sum(GRAPH_MODIFY_RATIO.values()) for i, v in enumerate(GRAPH_MODIFY_RATIO.values(), start=1)
+        }
         for k, v in counts.items():
-            stats_df.loc["count", k] = v
-            stats_df.loc["target_ratio"] = TARGET_RATIO[k]
-            stats_df.loc["output_ratio"] = v / self.graph_modifier.samples_per_class
+            k = int(k)
+            stats_df.loc["count", k] = int(v)
+            stats_df.loc["target_ratio", k] = TARGET_RATIO[k]
+            stats_df.loc["output_ratio", k] = v / self.graph_modifier.samples_per_class
 
         logger.info("[STATS] graph_modifier.generate_modified_models")
         logger.info(f"\n{stats_df.to_string()}")
@@ -128,28 +129,19 @@ class GraphModifierStatsTest(unittest.TestCase):
             self.assertLessEqual(abs(stats_df.loc["output_ratio", ed] - stats_df.loc["target_ratio", ed]), MIN_DIFF)
 
     def test_stats_edit_node(self):
-        self.stats(self.graph_modifier._generate_edit_node_model, list(range(1, EDIT_DISTANCE + 1)))
+        self.check_accuracy(self.graph_modifier._generate_edit_node_model, list(range(1, EDIT_DISTANCE + 1)))
 
     def test_stats_edit_edge(self):
-        self.stats(self.graph_modifier._generate_edit_edge_model, list(range(1, EDIT_DISTANCE + 1)))
-
-    def wrapped_generate_edit_distance_one(self, matrix, ops, _):
-        return self.graph_modifier.generate_edit_distance_one_model(matrix, ops)
-
-    def wrapped_generate_edit_distance_two(self, matrix, ops, _):
-        return self.graph_modifier.generate_edit_distance_two_model(matrix, ops)
-
-    def wrapped_generate_edit_distance_three(self, matrix, ops, _):
-        return self.graph_modifier.generate_edit_distance_three_model(matrix, ops)
+        self.check_accuracy(self.graph_modifier._generate_edit_edge_model, list(range(1, EDIT_DISTANCE + 1)))
 
     def test_stats_edit_distance_one_model(self):
-        self.stats(self.wrapped_generate_edit_distance_one, [1])
+        self.check_accuracy(lambda matrix, ops, _: self.graph_modifier.generate_edit_distance_one_model(matrix, ops), [1], title="edit_distance_one")
 
     def test_stats_edit_distance_two_model(self):
-        self.stats(self.wrapped_generate_edit_distance_two, [2])
+        self.check_accuracy(lambda matrix, ops, _: self.graph_modifier.generate_edit_distance_two_model(matrix, ops), [2], title="edit_distance_two")
 
     def test_stats_edit_distance_three_model(self):
-        self.stats(self.wrapped_generate_edit_distance_three, [3])
+        self.check_accuracy(lambda matrix, ops, _: self.graph_modifier.generate_edit_distance_three_model(matrix, ops), [3], title="edit_distance_three")
 
     def test_stats_modified_models(self):
-        self.stats_moddifier()
+        self.check_accuracy_modifier()
