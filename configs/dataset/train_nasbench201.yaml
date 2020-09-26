@@ -1,0 +1,4 @@
+dataset:
+    name: train_nasbench201
+    path: /home/dzzp/workspace/dataset/NAS-BENCH-201-v2-wo-losses.pth
+    batch_size: 64

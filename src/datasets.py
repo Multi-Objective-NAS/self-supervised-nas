@@ -131,21 +131,21 @@ class TrainNASBench(torch.utils.data.Dataset):
 
         # prepare for self.dataset
         self.max_len = max(len(seq) for seq in self.seqs)
-        for index in range(len(seqs)):
-            encoder_input = self.seq[index] + [0 for _ in range(self.max_len - len(self.inputs[index]))] # fix length as max_len
+        for index in range(len(self.seqs)):
+            encoder_input = self.seqs[index] + [0 for _ in range(self.max_len - len(self.seqs[index]))] # fix length as max_len
             len_input = self.seq_len[index]
             encoder_target = [self.targets[index]]
             decoder_input = [0] + encoder_input[:-1]
             sample = {
                 'encoder_input': np.array(encoder_input, dtype=np.int64),
-                'encoder_input_len': len_input,
+                'input_len': len_input,
                 'encoder_target': np.array(encoder_target, dtype=np.float64),
                 'decoder_input': np.array(decoder_input, dtype=np.int64),
                 'decoder_target': np.array(encoder_input, dtype=np.int64),
             }
             self.dataset.append(sample)
             self.writer.add_scalar(
-            f'Metric/performance', perf, len(self.dataset))
+            f'Metric/performance', len(self.dataset))
 
     def add(self, seqs):
         # add seqs
@@ -165,21 +165,21 @@ class TrainNASBench(torch.utils.data.Dataset):
             self.dataset = [] # Because max_len is changed, it needs to rewrite self.dataset.
             past_idx = 0
 
-        for index in range(past_idx, len(seqs)):
-            encoder_input = self.seq[index] + [0 for _ in range(self.max_len - len(self.inputs[index]))] # fix length as max_len
+        for index in range(past_idx, len(self.seqs)):
+            encoder_input = self.seqs[index] + [0 for _ in range(self.max_len - len(self.seqs[index]))] # fix length as max_len
             len_input = self.seq_len[index]
             encoder_target = [self.targets[index]]
             decoder_input = [0] + encoder_input[:-1]
             sample = {
                 'encoder_input': np.array(encoder_input, dtype=np.int64),
-                'encoder_input_len': len_input,
+                'input_len': len_input,
                 'encoder_target': np.array(encoder_target, dtype=np.float64),
                 'decoder_input': np.array(decoder_input, dtype=np.int64),
                 'decoder_target': np.array(encoder_input, dtype=np.int64),
             }
             self.dataset.append(sample)
             self.writer.add_scalar(
-            f'Metric/performance', perf, len(self.dataset))
+            f'Metric/performance', len(self.dataset))
 
     def is_valid(self, seq):
         matrix, ops = seminas_utils.convert_seq_to_arch(seq, self.engine.search_space)
@@ -201,7 +201,7 @@ class TrainNASBench(torch.utils.data.Dataset):
             reverse=True
         )
         return torch.utils.data.DataLoader(
-            dataset=[self.dataset[i]['encoder_input'] for i in indices[:count]],
+            dataset=[self.dataset[i] for i in indices[:count]],
             shuffle=True,
             batch_size=self.batch_size,
         )

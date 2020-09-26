@@ -142,10 +142,10 @@ class NAOTrainer:
                 input_len = input_len.numpy().tolist()
                 encoder_input = torch.index_select(encoder_input_unsorted, 0, sort_index)
                 # move to gpu
-                encoder_input = utils.move_to_cuda(encoder_input)
+                encoder_input = self._move_to_cuda(encoder_input)
 
                 self.controller.zero_grad()
-                new_archs, _ = self.controller.generate_new_arch(encoder_input, input_len, step, direction='+')
+                new_archs, _ = self.controller.generate_new_arch(encoder_input, input_len, step_size, direction='+')
                 new_archs = new_archs.data.squeeze().tolist()
                 for arch in new_archs:
                     if self.dataset.is_valid(arch):
@@ -154,7 +154,7 @@ class NAOTrainer:
                             break
         return generated_archs
 
-    def _move_to_cuda(tensor):
+    def _move_to_cuda(self, tensor):
         if torch.cuda.is_available():
             return tensor.cuda()
         return tensor
