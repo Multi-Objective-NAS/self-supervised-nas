@@ -120,9 +120,11 @@ class NAOTrainer:
         self.total_iterations = 0
 
     def train(self):
+        # train_controller() in SemiNAS : prepare dataLoader
         self.dataset.prepare(self.number_of_initial_archs)
         for self.outer_epoch in range(1, self.outer_epochs+1):
             for self.inner_epoch in tqdm.tqdm(range(1, self.inner_epochs)):
+                # controller_train() in SemiNAS
                 for self.iteration, sample in enumerate(self.dataset.shuffled(), start=1):
                     self.single_iteration(sample)
             self.dataset.add(self.generate_architectures())
@@ -133,9 +135,17 @@ class NAOTrainer:
         while step_size < self.max_step_size and len(generated_archs) < self.number_of_candidate_archs:
             step_size += 1
             for sample in self.dataset.sorted(self.number_of_seed_archs):
-                encoder_input = sample.to(0)
+                encoder_input_unsorted = sample['encoder_input'].long() # shape maybe (batch size, max seq length, word length)
+                input_len_unsorted = sample['input_len']
+                # sort input batch
+                input_len, sort_index = torch.sort(input_len_unsorted, 0, descending=True)
+                input_len = input_len.numpy().tolist()
+                encoder_input = torch.index_select(encoder_input_unsorted, 0, sort_index)
+                # move to gpu
+                encoder_input = utils.move_to_cuda(encoder_input)
+
                 self.controller.zero_grad()
-                new_archs, _ = self.controller.generate_new_arch(encoder_input, step_size, direction='+')
+                new_archs, _ = self.controller.generate_new_arch(encoder_input, input_len, step, direction='+')
                 new_archs = new_archs.data.squeeze().tolist()
                 for arch in new_archs:
                     if self.dataset.is_valid(arch):
@@ -144,23 +154,36 @@ class NAOTrainer:
                             break
         return generated_archs
 
+    def _move_to_cuda(tensor):
+        if torch.cuda.is_available():
+            return tensor.cuda()
+        return tensor
+
     def single_iteration(self, sample):
-        for k in sample.keys():
-            sample[k] = sample[k].to(0)
+        encoder_input_unsorted = sample['encoder_input'].long() # shape maybe (batch size, max seq length, word length)
+        encoder_target_unsorted = sample['encoder_target'].float()
+        decoder_input_unsorted = sample['decoder_input'].long()
+        decoder_target_unsorted = sample['decoder_target'].long()
+        input_len_unsorted = sample['input_len']
         
+        # sort input batch
+        input_len, sort_index = torch.sort(input_len_unsorted, 0, descending=True)
+        input_len = input_len.numpy().tolist()
+        encoder_input = torch.index_select(encoder_input_unsorted, 0, sort_index)
+        encoder_target = torch.index_select(encoder_target_unsorted, 0, sort_index)
+        decoder_input = torch.index_select(decoder_input_unsorted, 0, sort_index)
+        decoder_target = torch.index_select(decoder_target_unsorted, 0, sort_index)
+
+        # move to cuda
+        encoder_input = self._move_to_cuda(encoder_input) # shape maybe (batch size, max seq length, word length)
+        encoder_target = self._move_to_cuda(encoder_target)
+        decoder_input = self._move_to_cuda(decoder_input)
+        decoder_target = self._move_to_cuda(decoder_target)
+
         self.optimizer.zero_grad()
-        predict_value, log_prob, _ = self.controller(
-            sample['encoder_input'],
-            sample['decoder_input'],
-        )
-        loss_1 = F.mse_loss(
-            predict_value.squeeze(),
-            sample['encoder_target'].squeeze(),
-        )
-        loss_2 = F.nll_loss(
-            log_prob.contiguous().view(-1, log_prob.size(-1)),
-            sample['decoder_target'].view(-1),
-        )
+        predict_value, log_prob, _ = self.controller(encoder_input, input_len, decoder_input)
+        loss_1 = F.mse_loss(predict_value.squeeze(), encoder_target.squeeze())
+        loss_2 = F.nll_loss(log_prob.contiguous().view(-1, log_prob.size(-1)), decoder_target.view(-1))
         loss = self.loss_tradeoff * loss_1 + (1 - self.loss_tradeoff) * loss_2
         loss.backward()
         torch.nn.utils.clip_grad_norm_(self.controller.parameters(), self.gradient_bound)
