@@ -2,7 +2,7 @@ import hydra
 import torch
 import torch.nn
 from pytorch_metric_learning import losses, miners
-from libs.SemiNAS.nas_bench.controller import NAO
+from libs.SemiNAS.nasbench.controller import NAO
 from src.datasets import get_dataset
 from src.utils import config_validator, get_loss, get_optimizer, get_miner, get_scheduler, get_trainer
 from src.hooks import TensorboardHook, ModelSaverHook

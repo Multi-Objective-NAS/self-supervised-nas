@@ -5,7 +5,7 @@ import torch.backends.cudnn as cudnn
 from torch.utils.tensorboard import SummaryWriter
 import hydra
 
-from libs.SemiNAS.nas_bench.controller import NAO
+from libs.SemiNAS.nasbench.controller import NAO
 from src.datasets import get_dataset
 from src.utils import config_validator, get_loss, get_optimizer, get_miner, get_scheduler, get_trainer
 

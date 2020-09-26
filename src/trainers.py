@@ -6,7 +6,7 @@ import torch.nn.functional as F
 import tqdm
 from pytorch_metric_learning import trainers
 
-from libs.SemiNAS.nas_bench.controller import NAO
+from libs.SemiNAS.nasbench.controller import NAO
 
 
 class GraphEmbeddingTrainer(trainers.MetricLossOnly):

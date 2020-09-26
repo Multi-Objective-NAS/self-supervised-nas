@@ -5,9 +5,10 @@ import torch
 import numpy as np
 from hydra import utils as hydra_utils
 
-import nasbench
-from libs.SemiNAS.nas_bench import utils as seminas_utils
-
+from nasbench import api as api101
+from nasbench.lib import graph_util
+from nas_201_api import api_201 as api201
+from libs.SemiNAS.nasbench import utils as seminas_utils
 
 def get_dataset(name, path, **kwargs):
     assert name in ('train_nasbench101', 'pretrain_nasbench101', 'train_nasbench201', 'pretrain_nasbench201')
