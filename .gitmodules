@@ -1,10 +1,8 @@
 [submodule "libs/SemiNAS"]
 	path = libs/SemiNAS
-	url = https://github.com/Multi-Objective-NAS/SemiNAS
+	url = https://github.com/Multi-Objective-NAS/SemiNAS.git
 	branch = remove_restriction
-[submodule "libs/nasbench"]
-	path = libs/nasbench
-	url = https://github.com/google-research/nasbench
-[submodule "NAS-Bench-201"]
+[submodule "libs/NAS-Bench-201"]
 	path = libs/NAS-Bench-201
 	url = https://github.com/Multi-Objective-NAS/NAS-Bench-201.git
+	branch = self-supervised-nas
