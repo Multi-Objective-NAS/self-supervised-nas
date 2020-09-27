@@ -10,8 +10,8 @@ import pandas as pd
 from src.datasets import NASBench
 from src.graph_modifier import GraphModifier, NoValidModelExcpetion
 
-NASBENCH_101_DATASET = "/home/dzzp/workspace/dataset/test3000.tfrecord"
-TESTCASE_COUNT = 1000
+NASBENCH_101_DATASET = "/home/dzzp/workspace/dataset/nasbench_only108.tfrecord"
+TESTCASE_COUNT = 300
 SAMPLES_PER_CLASS = TESTCASE_COUNT
 EDIT_DISTANCE = 3
 
