@@ -126,6 +126,7 @@ class NAOTrainer:
             for self.inner_epoch in tqdm.tqdm(range(1, self.inner_epochs)):
                 for self.iteration, sample in enumerate(self.dataset.shuffled(), start=1):
                     self.single_iteration(sample)
+                self.lr_scheduler.step()
             self.dataset.add(self.generate_architectures())
 
     def generate_architectures(self):
@@ -177,3 +178,6 @@ class NAOTrainer:
         self.writer.add_scalar(
             f'Loss/Total', loss, self.total_iterations
         )
+        for lr_index, lr in enumerate(self.lr_scheduler.get_last_lr()):
+            self.writer.add_scalar(
+                f'LR/{lr_index}', lr, self.total_iterations)
