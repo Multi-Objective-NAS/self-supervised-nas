@@ -10,6 +10,19 @@ from src.datasets import get_dataset
 from src.utils import train_config_validator, get_loss, get_optimizer, get_miner, get_scheduler, get_trainer
 
 
+def _load_pretrained_weights(model, path):
+    if path is not None:
+        model.load_state_dict(torch.load(path))
+    return model
+
+
+def _get_target_parameters(model, freeze_encoder_decoder):
+    if freeze_encoder_decoder:
+        return list(model.encoder.mlp.parameters()) + list(model.encoder.regressor.parameters())
+    else:
+        return model.parameters()
+
+
 @hydra.main(config_path='configs/train.yaml')
 def train(cfg):
     print(cfg.pretty())
@@ -24,9 +37,11 @@ def train(cfg):
     cudnn.benchmark = True
 
     writer = SummaryWriter(log_dir='logs')
-    controller = NAO(**cfg.controller).to(0)
+    controller = _load_pretrained_weights(
+        NAO(**cfg.controller).to(0), cfg.pretrained_model_path)
     dataset = get_dataset(writer=writer, **cfg.dataset)
-    optimizer = get_optimizer(parameters=controller.parameters(), **cfg.optimizer)
+    optimizer = get_optimizer(
+        parameters=_get_target_parameters(controller, cfg.freeze_encoder_decoder), **cfg.optimizer)
     lr_scheduler = get_scheduler(optimizer=optimizer, **cfg.scheduler)
 
     get_trainer(
@@ -37,6 +52,7 @@ def train(cfg):
         writer=writer,
         **cfg.trainer,
     ).train()
+
 
 if __name__ == '__main__':
     train()

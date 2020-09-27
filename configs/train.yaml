@@ -6,7 +6,7 @@ optimizer:
     lr: 0.01
 scheduler:
     name: MultiStepLR
-    milestones: [100, 600, 1200, 2400]
+    milestones: [10, 60, 1200, 2400]
     gamma: 0.1
 trainer:
     name: NAOTrainer
@@ -18,3 +18,5 @@ trainer:
     number_of_seed_archs: 128
     number_of_candidate_archs: 128
     max_step_size: 100
+freeze_encoder_decoder: False
+pretrained_model_path:
