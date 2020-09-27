@@ -20,18 +20,23 @@ def get_engine_modelspec(name, path):
         raise ValueError('Invalid name')
 
 
-def get_dataset(name, path, **kwargs):
+def get_dataset(name, path, mode, **kwargs):
     assert name == 'nasbench101' or name == 'nasbench201'
+    assert mode in ('pretrain', 'train')
 
     if not pathlib.Path(path).is_absolute():
         path = hydra_utils.to_absolute_path(path)
         assert pathlib.Path(path).exists()
 
     engine, model_spec = get_engine_modelspec(name, path)
-    return NASBench(engine=engine, model_spec=model_spec, **kwargs)
+    if mode == 'pretrain':
+        dataset_cls = PretrainNASBench
+    elif mode == 'train':
+        dataset_cls = TrainNASBench
+    return dataset_cls(engine=engine, model_spec=model_spec, **kwargs)
 
 
-class NASBench(torch.utils.data.IterableDataset):
+class PretrainNASBench(torch.utils.data.IterableDataset):
     def __init__(self, engine, model_spec, samples_per_class, graph_modify_ratio):
         self.engine = engine
         self.model_spec = model_spec
@@ -103,14 +108,10 @@ class NASBench(torch.utils.data.IterableDataset):
         return self.engine.is_valid(model)
 
 
-# TODO: Needs fix to match the new nasbench api
-class TrainNASBench101(torch.utils.data.Dataset):
-    def __init__(self, path, batch_size, writer):
-        if not pathlib.Path(path).is_absolute():
-            path = hydra_utils.to_absolute_path(path)
-        assert pathlib.Path(path).exists()
-
-        self.engine = nasbench.api.NASBench(path)
+class TrainNASBench(torch.utils.data.Dataset):
+    def __init__(self, engine, model_spec, batch_size, writer):
+        self.engine = engine
+        self.model_spec = model_spec
         self.batch_size = batch_size
         self.writer = writer
 
@@ -118,43 +119,49 @@ class TrainNASBench101(torch.utils.data.Dataset):
         self.seqs = []
 
     def _query(self, matrix, ops):
-        arch = nasbench.api.ModelSpec(matrix=matrix, ops=ops)
-        return self.engine.query(arch)['validation_accuracy']
+        arch = self.model_spec(matrix=matrix, ops=ops)
+        return self.engine.query(arch, 'valid'), self.engine.query(arch, 'test')
 
-    def _append(self, seq, perf):
+    def _append(self, seq, sampled_perf, true_perf):
         self.seqs.append(seq)
         self.dataset.append({
             'encoder_input': torch.LongTensor(seq),
             'decoder_input': torch.LongTensor([0] + seq[:-1]),
-            'encoder_target': torch.FloatTensor([max(perf-0.8, 0.0) * 5.0]),
+            'encoder_target': torch.FloatTensor([max(sampled_perf-0.8, 0.0) * 5.0]),
             'decoder_target': torch.LongTensor(seq),
         })
         self.writer.add_scalar(
-            f'Metric/performance', perf, len(self.dataset))
+            f'Metric/performance', sampled_perf, len(self.dataset))
+        self.writer.add_scalar(
+            f'Metric/true_performance', true_perf, len(self.dataset))
 
     def prepare(self, count):
         for key in self.engine.hash_iterator():
             fixed_stat, _ = self.engine.get_metrics_from_hash(key)
             matrix, ops = np.array(fixed_stat['module_adjacency']), fixed_stat['module_operations']
             if matrix.shape[0] == 7:
+                sampled_perf, true_perf = self._query(matrix, ops)
                 self._append(
-                    seq=seminas_utils.convert_arch_to_seq(matrix, ops),
-                    perf=self._query(matrix, ops)
+                    seq=seminas_utils.convert_arch_to_seq(matrix, ops, self.engine.search_space),
+                    sampled_perf=sampled_perf,
+                    true_perf=true_perf,
                 )
                 if len(self.dataset) >= count:
                     break
 
     def add(self, seqs):
         for seq in seqs:
-            matrix, ops = seminas_utils.convert_seq_to_arch(seq)
+            matrix, ops = seminas_utils.convert_seq_to_arch(seq, self.engine.search_space)
+            sampled_perf, true_perf = self._query(matrix, ops)
             self._append(
-                seq=seminas_utils.convert_arch_to_seq(matrix, ops),
-                perf=self._query(matrix, ops),
+                seq=seminas_utils.convert_arch_to_seq(matrix, ops, self.engine.search_space),
+                sampled_perf=sampled_perf,
+                true_perf=true_perf,
             )
 
     def is_valid(self, seq):
-        matrix, ops = seminas_utils.convert_seq_to_arch(seq)
-        arch = nasbench.api.ModelSpec(matrix=matrix, ops=ops)
+        matrix, ops = seminas_utils.convert_seq_to_arch(seq, self.engine.search_space)
+        arch = self.model_spec(matrix=matrix, ops=ops)
         return self.engine.is_valid(arch) and len(arch.ops) == 7 and seq not in self.seqs
 
     def shuffled(self):

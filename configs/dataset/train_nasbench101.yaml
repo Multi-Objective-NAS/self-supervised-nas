@@ -1,4 +1,5 @@
 dataset:
-    name: train_nasbench101
+    name: nasbench101
     path: datasets/nasbench/nasbench_only108.tfrecord
+    mode: train
     batch_size: 64

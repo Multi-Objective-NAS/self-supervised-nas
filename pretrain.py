@@ -5,14 +5,14 @@ import torch.nn
 from pytorch_metric_learning import losses, miners
 from libs.SemiNAS.nas_bench.controller import NAO
 from src.datasets import get_dataset
-from src.utils import config_validator, get_loss, get_optimizer, get_miner, get_scheduler, get_trainer
+from src.utils import pretrain_config_validator, get_loss, get_optimizer, get_miner, get_scheduler, get_trainer
 from src.hooks import TensorboardHook, ModelSaverHook
 
 
-@hydra.main(config_path='configs/experiment.yaml')
+@hydra.main(config_path='configs/pretrain.yaml')
 def pretrain(cfg):
     print(cfg.pretty())
-    config_validator(cfg)
+    pretrain_config_validator(cfg)
 
     models = {'trunk': NAO(**cfg.controller).to(0)}
     dataset = get_dataset(**cfg.dataset)

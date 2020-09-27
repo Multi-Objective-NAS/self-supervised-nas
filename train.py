@@ -7,13 +7,13 @@ import hydra
 
 from libs.SemiNAS.nas_bench.controller import NAO
 from src.datasets import get_dataset
-from src.utils import config_validator, get_loss, get_optimizer, get_miner, get_scheduler, get_trainer
+from src.utils import train_config_validator, get_loss, get_optimizer, get_miner, get_scheduler, get_trainer
 
 
 @hydra.main(config_path='configs/train.yaml')
 def train(cfg):
     print(cfg.pretty())
-    # config_validator(cfg)
+    train_config_validator(cfg)
 
     # Fix seed
     random.seed(42)
