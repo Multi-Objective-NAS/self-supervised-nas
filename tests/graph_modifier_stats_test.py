@@ -128,20 +128,21 @@ class GraphModifierStatsTest(unittest.TestCase):
         for ed in TARGET_RATIO.keys():
             self.assertLessEqual(abs(stats_df.loc["output_ratio", ed] - stats_df.loc["target_ratio", ed]), MIN_DIFF)
 
-    def test_stats_edit_node(self):
+    def test_accuracy_edit_node(self):
         self.check_accuracy(self.graph_modifier._generate_edit_node_model, list(range(1, EDIT_DISTANCE + 1)))
 
-    def test_stats_edit_edge(self):
-        self.check_accuracy(self.graph_modifier._generate_edit_edge_model, list(range(1, EDIT_DISTANCE + 1)))
+    # test edit-distance=1,2
+    def test_accuracy_edit_edge(self):
+        self.check_accuracy(self.graph_modifier._generate_edit_edge_model, list(range(1, EDIT_DISTANCE)))
 
-    def test_stats_edit_distance_one_model(self):
+    def test_accuracy_edit_distance_one_model(self):
         self.check_accuracy(lambda matrix, ops, _: self.graph_modifier.generate_edit_distance_one_model(matrix, ops), [1], title="edit_distance_one")
 
-    def test_stats_edit_distance_two_model(self):
+    def test_accuracy_edit_distance_two_model(self):
         self.check_accuracy(lambda matrix, ops, _: self.graph_modifier.generate_edit_distance_two_model(matrix, ops), [2], title="edit_distance_two")
 
-    def test_stats_edit_distance_three_model(self):
+    def test_accuracy_edit_distance_three_model(self):
         self.check_accuracy(lambda matrix, ops, _: self.graph_modifier.generate_edit_distance_three_model(matrix, ops), [3], title="edit_distance_three")
 
-    def test_stats_modified_models(self):
+    def test_accuracy_modified_models(self):
         self.check_accuracy_modifier()

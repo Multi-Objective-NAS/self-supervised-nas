@@ -113,7 +113,7 @@ class GraphModifier():
             return self._generate_edit_edge_model(matrix, ops, edit_distance=2)
 
     def generate_edit_distance_three_model(self, matrix, ops):
-        choice = np.random.choice(range(5), p=[0.1, 0.3, 0.3, 0.3, 0.0])
+        choice = np.random.choice(range(5), p=[0.1, 0.3, 0.3, 0.3])
 
         if choice == 0:
             return self.get_delete_one_node_model(matrix, ops)
@@ -125,14 +125,11 @@ class GraphModifier():
             new_matrix, _ = self._generate_edit_edge_model(matrix, ops, edit_distance=1)
             _, new_ops = self._generate_edit_node_model(matrix, ops, edit_distance=2)
             return (new_matrix, new_ops)
-        elif choice == 3:
+        else:
             # replace 1 node + edit 2 edge
             new_matrix, _ = self._generate_edit_edge_model(matrix, ops, edit_distance=2)
             _, new_ops = self._generate_edit_node_model(matrix, ops, edit_distance=1)
             return (new_matrix, new_ops)
-        else:
-            # edit 3 edge
-            return self._generate_edit_edge_model(matrix, ops, edit_distance=3)
 
     def _try_modify_graph(self, matrix, ops):
         choices = range(len(self.modify_functions))
