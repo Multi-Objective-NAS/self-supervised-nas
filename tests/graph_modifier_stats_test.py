@@ -11,8 +11,8 @@ from src.datasets import NASBench
 from src.graph_modifier import GraphModifier, NoValidModelExcpetion
 
 NASBENCH_101_DATASET = "/home/dzzp/workspace/dataset/test3000.tfrecord"
-TESTCASE_COUNT = 200
-SAMPLES_PER_CLASS = 200
+TESTCASE_COUNT = 1000
+SAMPLES_PER_CLASS = TESTCASE_COUNT
 EDIT_DISTANCE = 3
 
 MIN_ACCURACY = 0.9
@@ -118,7 +118,7 @@ class GraphModifierStatsTest(unittest.TestCase):
         for k, v in counts.items():
             k = int(k)
             stats_df.loc["count", k] = int(v)
-            stats_df.loc["target_ratio", k] = TARGET_RATIO[k]
+            stats_df.loc["target_ratio", k] = TARGET_RATIO.get(k, 0)
             stats_df.loc["output_ratio", k] = v / self.graph_modifier.samples_per_class
 
         logger.info("[STATS] graph_modifier.generate_modified_models")
