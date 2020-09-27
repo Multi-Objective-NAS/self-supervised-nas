@@ -1,3 +1,4 @@
+import pathlib
 import torch
 from pytorch_metric_learning import losses, miners
 from src import trainers
@@ -11,7 +12,8 @@ def pretrain_config_validator(cfg):
 
 
 def train_config_validator(cfg):
-    pass
+    if cfg.pretrained_model_path:
+        assert pathlib.Path(cfg.pretrained_model_path).exists()
 
 
 def get_optimizer(name, parameters, **kwargs):

@@ -26,7 +26,7 @@ def get_dataset(name, path, mode, **kwargs):
 
     if not pathlib.Path(path).is_absolute():
         path = hydra_utils.to_absolute_path(path)
-        assert pathlib.Path(path).exists()
+    assert pathlib.Path(path).exists()
 
     engine, model_spec = get_engine_modelspec(name, path)
     if mode == 'pretrain':
