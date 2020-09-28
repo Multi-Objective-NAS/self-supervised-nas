@@ -142,7 +142,7 @@ class NAOTrainer:
                 for arch in new_archs:
                     if self.dataset.is_valid(arch):
                         generated_archs.append(arch)
-                        if len(generated_archs) < self.number_of_candidate_archs:
+                        if len(generated_archs) >= self.number_of_candidate_archs:
                             break
         return generated_archs
 
