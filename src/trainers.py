@@ -127,7 +127,11 @@ class NAOTrainer:
                 for self.iteration, sample in enumerate(self.dataset.shuffled(), start=1):
                     self.single_iteration(sample)
                 self.lr_scheduler.step()
-            self.dataset.add(self.generate_architectures())
+            candidates = self.generate_architectures()
+            self.dataset.add(candidates)
+            self.writer.add_scalar(
+                f'Generated Architectures', len(candidates), self.outer_epoch
+            )
 
     def generate_architectures(self):
         generated_archs = []
@@ -170,13 +174,13 @@ class NAOTrainer:
 
         self.total_iterations += 1
         self.writer.add_scalar(
-            f'Loss/MSE', loss_1, self.total_iterations
+            'Loss/MSE', loss_1, self.total_iterations
         )
         self.writer.add_scalar(
-            f'Loss/NLL', loss_2, self.total_iterations
+            'Loss/NLL', loss_2, self.total_iterations
         )
         self.writer.add_scalar(
-            f'Loss/Total', loss, self.total_iterations
+            'Loss/Total', loss, self.total_iterations
         )
         for lr_index, lr in enumerate(self.lr_scheduler.get_last_lr()):
             self.writer.add_scalar(
