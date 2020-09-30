@@ -2,12 +2,12 @@ defaults:
     - controller: nasbench101
     - dataset: pretrain_nasbench101
 optimizer:
-    name: Adam
-    lr: 0.01
+    name: SGD
+    lr: 1.0
 scheduler:
     name: MultiStepLR
-    milestones: [800, 1600, 2400, 3000]
-    gamma: 0.1
+    milestones: [4500, ]
+    gamma: 0.2
 trainer:
     name: GraphEmbeddingTrainer
     batch_size: 512

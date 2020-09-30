@@ -2,8 +2,8 @@ defaults:
     - controller: nasbench101
     - dataset: train_nasbench101
 optimizer:
-    name: Adam
-    lr: 0.01
+    name: SGD
+    lr: 0.1
 scheduler:
     name: MultiStepLR
     milestones: [10, 60, 1200, 2400]

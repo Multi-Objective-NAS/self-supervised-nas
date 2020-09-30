@@ -144,7 +144,7 @@ class NAOTrainer:
                 new_archs, _ = self.controller.generate_new_arch(encoder_input, step_size, direction='+')
                 new_archs = new_archs.data.squeeze().tolist()
                 for arch in new_archs:
-                    if self.dataset.is_valid(arch):
+                    if self.dataset.is_valid(arch) and arch not in generated_archs:
                         generated_archs.append(arch)
                         if len(generated_archs) >= self.number_of_candidate_archs:
                             break
