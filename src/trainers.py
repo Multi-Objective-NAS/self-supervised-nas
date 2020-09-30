@@ -153,7 +153,7 @@ class NAOTrainer:
     def single_iteration(self, sample):
         for k in sample.keys():
             sample[k] = sample[k].to(0)
-        
+
         self.optimizer.zero_grad()
         predict_value, log_prob, _ = self.controller(
             sample['encoder_input'],

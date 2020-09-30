@@ -113,7 +113,8 @@ class GraphModifier():
             return self._generate_edit_edge_model(matrix, ops, edit_distance=2)
 
     def generate_edit_distance_three_model(self, matrix, ops):
-        choice = np.random.choice(range(4), p=[0.1, 0.3, 0.3, 0.3])
+        # choice = np.random.choice(range(4), p=[0.1, 0.3, 0.3, 0.3])
+        choice = np.random.choice(range(1, 4))
 
         if choice == 0:
             return self.get_delete_one_node_model(matrix, ops)

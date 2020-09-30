@@ -75,25 +75,6 @@ class PretrainNASBench(torch.utils.data.IterableDataset):
             if matrix.shape[0] == 7:
                 yield (index, matrix, ops)
 
-    def _generate_isomorphic_graphs(self, matrix, ops):
-        """Substituted by graph_modifier.generate_modified_models"""
-        vertices = matrix.shape[0]
-        count = 0
-
-        while count < self.samples_per_class:
-            # Permute except first (input) and last (output)
-            perm = np.random.permutation(range(1, vertices - 1))
-            perm = np.insert(perm, 0, 0)
-            perm = np.insert(perm, vertices - 1, vertices - 1)
-
-            pmatrix, pops = graph_util.permute_graph(matrix, ops, perm)
-            modelspec = self.engine.get_modelspec(matrix=matrix, ops=ops)
-            if self.engine.is_valid(modelspec):
-                count += 1
-                yield (pmatrix, pops)
-
-        raise StopIteration
-
     def _encode(self, matrix, ops):
         return seminas_utils.convert_arch_to_seq(matrix, ops, self.search_space)
 

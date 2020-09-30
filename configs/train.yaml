@@ -6,7 +6,7 @@ optimizer:
     lr: 0.1
 scheduler:
     name: MultiStepLR
-    milestones: [10, 60, 1200, 2400]
+    milestones: [1200, 2400]
     gamma: 0.1
 trainer:
     name: NAOTrainer
