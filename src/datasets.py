@@ -11,20 +11,32 @@ from libs.SemiNAS.nas_bench import utils as seminas_utils
 from .graph_modifier import GraphModifier
 
 
-def get_dataset(name, path, **kwargs):
+def get_engine_modelspec(name, path):
+    if name == 'nasbench101':
+        return api101.NASBench(path), api101.ModelSpec
+    elif name == 'nasbench201':
+        return api201.NASBench201API(path), api201.ModelSpec
+    else:
+        raise ValueError('Invalid name')
+
+
+def get_dataset(name, path, mode, **kwargs):
     assert name == 'nasbench101' or name == 'nasbench201'
+    assert mode in ('pretrain', 'train')
 
     if not pathlib.Path(path).is_absolute():
         path = hydra_utils.to_absolute_path(path)
-        assert pathlib.Path(path).exists()
+    assert pathlib.Path(path).exists()
 
-    if name == 'nasbench101':
-        return NASBench(engine=api101.NASBench(path), model_spec=api101.ModelSpec, **kwargs)
-    elif name == 'nasbench201':
-        return NASBench(engine=api201.NASBench201API(path), model_spec=api101.ModelSpec, **kwargs)
+    engine, model_spec = get_engine_modelspec(name, path)
+    if mode == 'pretrain':
+        dataset_cls = PretrainNASBench
+    elif mode == 'train':
+        dataset_cls = TrainNASBench
+    return dataset_cls(engine=engine, model_spec=model_spec, **kwargs)
 
 
-class NASBench(torch.utils.data.IterableDataset):
+class PretrainNASBench(torch.utils.data.IterableDataset):
     def __init__(self, engine, model_spec, samples_per_class, graph_modify_ratio):
         self.engine = engine
         self.model_spec = model_spec
@@ -35,10 +47,9 @@ class NASBench(torch.utils.data.IterableDataset):
 
         # Find dataset length
         length = 0
-        for index, key in enumerate(engine.hash_iterator()):
+        for key in engine.hash_iterator():
             arch = engine.get_modelspec_by_hash(key)
-            matrix, ops = arch.matrix, arch.ops
-            if matrix.shape[0] == 7:
+            if arch.matrix.shape[0] == 7:
                 length += 1
         self._dataset_length = length
 
@@ -64,25 +75,6 @@ class NASBench(torch.utils.data.IterableDataset):
             if matrix.shape[0] == 7:
                 yield (index, matrix, ops)
 
-    def _generate_isomorphic_graphs(self, matrix, ops):
-        """Substituted by graph_modifier.generate_modified_models"""
-        vertices = matrix.shape[0]
-        count = 0
-
-        while count < self.samples_per_class:
-            # Permute except first (input) and last (output)
-            perm = np.random.permutation(range(1, vertices - 1))
-            perm = np.insert(perm, 0, 0)
-            perm = np.insert(perm, vertices - 1, vertices - 1)
-
-            pmatrix, pops = graph_util.permute_graph(matrix, ops, perm)
-            modelspec = self.engine.get_modelspec(matrix=matrix, ops=ops)
-            if self.engine.is_valid(modelspec):
-                count += 1
-                yield (pmatrix, pops)
-
-        raise StopIteration
-
     def _encode(self, matrix, ops):
         return seminas_utils.convert_arch_to_seq(matrix, ops, self.search_space)
 
@@ -95,3 +87,79 @@ class NASBench(torch.utils.data.IterableDataset):
         if (model.matrix != matrix).any():
             return False
         return self.engine.is_valid(model)
+
+
+class TrainNASBench(torch.utils.data.Dataset):
+    def __init__(self, engine, model_spec, batch_size, writer):
+        self.engine = engine
+        self.model_spec = model_spec
+        self.batch_size = batch_size
+        self.writer = writer
+
+        self.dataset = []
+        self.seqs = []
+
+    def _query(self, matrix, ops):
+        arch = self.model_spec(matrix=matrix, ops=ops)
+        return self.engine.query(arch, 'valid'), self.engine.query(arch, 'test')
+
+    def _append(self, seq, sampled_perf, true_perf):
+        self.seqs.append(seq)
+        self.dataset.append({
+            'encoder_input': torch.LongTensor(seq),
+            'decoder_input': torch.LongTensor([0] + seq[:-1]),
+            'encoder_target': torch.FloatTensor([max(sampled_perf-0.8, 0.0) * 5.0]),
+            'decoder_target': torch.LongTensor(seq),
+        })
+        self.writer.add_scalar(
+            f'Metric/performance', sampled_perf, len(self.dataset))
+        self.writer.add_scalar(
+            f'Metric/true_performance', true_perf, len(self.dataset))
+
+    def prepare(self, count):
+        for key in self.engine.hash_iterator():
+            fixed_stat, _ = self.engine.get_metrics_from_hash(key)
+            matrix, ops = np.array(fixed_stat['module_adjacency']), fixed_stat['module_operations']
+            if matrix.shape[0] == 7:
+                sampled_perf, true_perf = self._query(matrix, ops)
+                self._append(
+                    seq=seminas_utils.convert_arch_to_seq(matrix, ops, self.engine.search_space),
+                    sampled_perf=sampled_perf,
+                    true_perf=true_perf,
+                )
+                if len(self.dataset) >= count:
+                    break
+
+    def add(self, seqs):
+        for seq in seqs:
+            matrix, ops = seminas_utils.convert_seq_to_arch(seq, self.engine.search_space)
+            sampled_perf, true_perf = self._query(matrix, ops)
+            self._append(
+                seq=seminas_utils.convert_arch_to_seq(matrix, ops, self.engine.search_space),
+                sampled_perf=sampled_perf,
+                true_perf=true_perf,
+            )
+
+    def is_valid(self, seq):
+        matrix, ops = seminas_utils.convert_seq_to_arch(seq, self.engine.search_space)
+        arch = self.model_spec(matrix=matrix, ops=ops)
+        return self.engine.is_valid(arch) and len(arch.ops) == 7 and seq not in self.seqs
+
+    def shuffled(self):
+        return torch.utils.data.DataLoader(
+            dataset=self.dataset,
+            shuffle=True,
+            batch_size=self.batch_size,
+        )
+
+    def sorted(self, count):
+        indices = sorted(
+            range(len(self.dataset)),
+            key=lambda i: self.dataset[i]['encoder_target'],
+            reverse=True
+        )
+        return torch.utils.data.DataLoader(
+            dataset=[self.dataset[i]['encoder_input'] for i in indices[:count]],
+            shuffle=True,
+            batch_size=self.batch_size,
+        )

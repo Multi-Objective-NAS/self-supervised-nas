@@ -62,4 +62,7 @@ class ModelSaverHook:
         for model_name, model in trainer.models.items():
             torch.save(model.state_dict(),
                        f'weights/{model_name}-{self.total_epochs}.h5')
+        for optim_name, optim in trainer.optimizers.items():
+            torch.save(optim.state_dict(),
+                       f'weights/{optim_name}-{self.total_epochs}.h5')
         self.total_epochs += 1

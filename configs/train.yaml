@@ -1,0 +1,22 @@
+defaults:
+    - controller: nasbench101
+    - dataset: train_nasbench101
+optimizer:
+    name: SGD
+    lr: 0.1
+scheduler:
+    name: MultiStepLR
+    milestones: [1200, 2400]
+    gamma: 0.1
+trainer:
+    name: NAOTrainer
+    outer_epochs: 10
+    inner_epochs: 100
+    loss_tradeoff: 0.5
+    gradient_bound: 5.0
+    number_of_initial_archs: 128
+    number_of_seed_archs: 128
+    number_of_candidate_archs: 128
+    max_step_size: 100
+freeze_encoder_decoder: False
+pretrained_model_path:
