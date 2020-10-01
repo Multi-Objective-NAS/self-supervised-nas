@@ -7,10 +7,10 @@ import matplotlib.pyplot as plt
 
 
 class TensorboardHook:
-    def __init__(self):
-        self.writer = SummaryWriter(log_dir='logs')
-        self.visualizer = umap.UMAP()
+    def __init__(self, visualizers):
         self.total_iterations = 0
+        self.writer = SummaryWriter(log_dir='logs')
+        self.visualizers = visualizers
 
     def end_of_iteration_hook(self, trainer):
         for loss_name, loss in trainer.losses.items():
@@ -25,16 +25,18 @@ class TensorboardHook:
                 f'Metric/{key}', value, self.total_iterations)
 
         if trainer.visualize_scratchpad:
-            img = self._get_embedding_visualization(
-                **trainer.visualize_scratchpad)
-            self.writer.add_image('UMAP Embeddings', img,
-                                  self.total_iterations, dataformats='HWC')
+            for viz in self.visualizers:
+                name = f'{viz.metric}/{viz}'
+                img = self._get_embedding_visualization(
+                    viz.fit_transform, **trainer.visualize_scratchpad)
+                self.writer.add_image(
+                    name, img, self.total_iterations, dataformats='HWC')
             trainer.visualize_scratchpad.clear()
 
         self.total_iterations += 1
 
-    def _get_embedding_visualization(self, embeddings, labels):
-        reduced_embeddings = self.visualizer.fit_transform(embeddings)
+    def _get_embedding_visualization(self, fit_transform, embeddings, labels):
+        reduced_embeddings = fit_transform(embeddings)
         unique_labels = np.unique(labels)
         if len(unique_labels) > 16:
             unique_labels = unique_labels[:16]
@@ -54,6 +56,7 @@ class TensorboardHook:
             fig.canvas.tostring_rgb(), dtype=np.uint8)
         image_from_plot = image_from_plot.reshape(
             fig.canvas.get_width_height() + (3, ))
+        plt.close(fig)
         return image_from_plot
 
 
