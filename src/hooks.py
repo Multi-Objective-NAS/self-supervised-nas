@@ -20,6 +20,10 @@ class TensorboardHook:
             for lr_index, lr in enumerate(sched.get_last_lr()):
                 self.writer.add_scalar(
                     f'LR/{sched_name}/{lr_index}', lr, self.total_iterations)
+        for key, value in trainer.scalar_scratchpad.items():
+            self.writer.add_scalar(
+                f'Metric/{key}', value, self.total_iterations)
+
         if trainer.visualize_scratchpad:
             img = self._get_embedding_visualization(
                 **trainer.visualize_scratchpad)

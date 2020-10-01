@@ -15,6 +15,7 @@ class GraphEmbeddingTrainer(trainers.MetricLossOnly):
         self.num_epochs = num_epochs
         self.visualize_step = visualize_step
         self.visualize_scratchpad = {}
+        self.scalar_scratchpad = {}
 
     def calculate_loss(self, curr_batch):
         (encoder_input, decoder_input), labels = curr_batch
@@ -33,6 +34,9 @@ class GraphEmbeddingTrainer(trainers.MetricLossOnly):
             embeddings, labels, indices_tuple)
         self.losses['reconstruction_loss'] = self.get_reconstruction_loss(
             dec_outputs, encoder_input)
+        self.scalar_scratchpad['accuracy'] = self.get_accuracy(
+            dec_outputs, encoder_input
+        )
 
         if self.iteration % self.visualize_step == 0:
             self.visualize_scratchpad['embeddings'] = embeddings.detach().cpu()
@@ -64,6 +68,11 @@ class GraphEmbeddingTrainer(trainers.MetricLossOnly):
             output.contiguous().view(-1, output.size(-1)),
             target.view(-1)
         )
+
+    def get_accuracy(self, output, target):
+        output_argmax = output.contiguous().view(-1, output.size(-1)).argmax(-1)
+        target_argmax = target.view(-1)
+        return (output_argmax == target_argmax).float().mean().item()
 
     def allowed_model_keys(self):
         return super().allowed_model_keys()
@@ -163,8 +172,9 @@ class NAOTrainer:
             predict_value.squeeze(),
             sample['encoder_target'].squeeze(),
         )
+        flat_log_prob = log_prob.contiguous().view(-1, log_prob.size(-1))
         loss_2 = F.nll_loss(
-            log_prob.contiguous().view(-1, log_prob.size(-1)),
+            flat_log_prob,
             sample['decoder_target'].view(-1),
         )
         loss = self.loss_tradeoff * loss_1 + (1 - self.loss_tradeoff) * loss_2
@@ -173,6 +183,11 @@ class NAOTrainer:
         self.optimizer.step()
 
         self.total_iterations += 1
+        self.writer.add_scalar(
+            'Metric/Accuracy',
+            (flat_log_prob.argmax(-1) == sample['decoder_target'].view(-1)).float().mean().item(),
+            self.total_iterations
+        )
         self.writer.add_scalar(
             'Loss/MSE', loss_1, self.total_iterations
         )
