@@ -9,3 +9,4 @@ trainer:
     loss_weights:
         reconstruction_loss: 1.0
         metric_loss: 0.0
+visualizers:
