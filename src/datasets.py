@@ -129,8 +129,8 @@ class TrainNASBench(torch.utils.data.Dataset):
 
     def prepare(self, count):
         for key in self.engine.hash_iterator():
-            fixed_stat, _ = self.engine.get_metrics_from_hash(key)
-            matrix, ops = np.array(fixed_stat['module_adjacency']), fixed_stat['module_operations']
+            arch = self.engine.get_modelspec_by_hash(self, key)
+            matrix, ops = arch.matrix, arch.ops
             sampled_perf, true_perf = self._query(matrix, ops)
             self._append(
                 seq=self._encode(matrix, ops),
