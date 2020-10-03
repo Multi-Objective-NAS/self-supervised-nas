@@ -9,3 +9,7 @@ trainer:
     loss_weights:
         reconstruction_loss: 1.0
         metric_loss: 1.0
+visualizers:
+    -   min_dist: 0.5
+        n_neighbors: 32
+        metric: euclidean

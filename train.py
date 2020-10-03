@@ -7,13 +7,7 @@ import hydra
 
 from libs.SemiNAS.nas_bench.controller import NAO
 from src.datasets import get_dataset
-from src.utils import train_config_validator, get_loss, get_optimizer, get_miner, get_scheduler, get_trainer
-
-
-def _load_pretrained_weights(model, path):
-    if path is not None:
-        model.load_state_dict(torch.load(path))
-    return model
+from src.utils import train_config_validator, get_loss, get_optimizer, get_miner, get_scheduler, get_trainer, load_pretrained_weights
 
 
 def _get_target_parameters(model, freeze_encoder_decoder):
@@ -37,7 +31,7 @@ def train(cfg):
     cudnn.benchmark = True
 
     writer = SummaryWriter(log_dir='logs')
-    controller = _load_pretrained_weights(
+    controller = load_pretrained_weights(
         NAO(**cfg.controller).to(0), cfg.pretrained_model_path)
     dataset = get_dataset(writer=writer, **cfg.dataset)
     optimizer = get_optimizer(

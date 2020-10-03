@@ -16,6 +16,12 @@ def train_config_validator(cfg):
         assert pathlib.Path(cfg.pretrained_model_path).exists()
 
 
+def load_pretrained_weights(model, path):
+    if path is not None:
+        model.load_state_dict(torch.load(path))
+    return model
+
+
 def get_optimizer(name, parameters, **kwargs):
     return getattr(torch.optim, name)(parameters, **kwargs)
 

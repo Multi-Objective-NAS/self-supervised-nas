@@ -6,10 +6,66 @@ optimizer:
     lr: 1.0
 scheduler:
     name: MultiStepLR
-    milestones: [4500, ]
+    milestones: [6000, ]
     gamma: 0.2
 trainer:
     name: GraphEmbeddingTrainer
     batch_size: 512
-    num_epochs: 1
+    num_epochs: 2
     visualize_step: 400
+pretrained_model_path:
+visualizers:
+    -   n_neighbors: 8
+        min_dist: 0.0
+        metric: euclidean
+    -   n_neighbors: 16
+        min_dist: 0.0
+        metric: euclidean
+    -   n_neighbors: 32
+        min_dist: 0.0
+        metric: euclidean
+    -   n_neighbors: 8
+        min_dist: 0.1
+        metric: euclidean
+    -   n_neighbors: 16
+        min_dist: 0.1
+        metric: euclidean
+    -   n_neighbors: 32
+        min_dist: 0.1
+        metric: euclidean
+    -   n_neighbors: 8
+        min_dist: 0.5
+        metric: euclidean
+    -   n_neighbors: 16
+        min_dist: 0.5
+        metric: euclidean
+    -   n_neighbors: 32
+        min_dist: 0.5
+        metric: euclidean
+    -   n_neighbors: 8
+        min_dist: 0.0
+        metric: cosine
+    -   n_neighbors: 16
+        min_dist: 0.0
+        metric: cosine
+    -   n_neighbors: 32
+        min_dist: 0.0
+        metric: cosine
+    -   n_neighbors: 8
+        min_dist: 0.1
+        metric: cosine
+    -   n_neighbors: 16
+        min_dist: 0.1
+        metric: cosine
+    -   n_neighbors: 32
+        min_dist: 0.1
+        metric: cosine
+    -   n_neighbors: 8
+        min_dist: 0.5
+        metric: cosine
+    -   n_neighbors: 16
+        min_dist: 0.5
+        metric: cosine
+    -   n_neighbors: 32
+        min_dist: 0.5
+        metric: cosine
