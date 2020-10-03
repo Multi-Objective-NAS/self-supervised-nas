@@ -3,6 +3,7 @@ import pathlib
 from hydra import utils as hydra_utils
 import numpy as np
 import torch
+import math
 
 from nasbench import api as api101
 from nasbench.lib import graph_util
@@ -124,6 +125,20 @@ class TrainNASBench(torch.utils.data.Dataset):
         return seq
 
     def _decode(self, seq):
+        assert 6 in seq
+        seq = seq[:seq.index(6) + 1]
+
+        n = int(math.floor(math.sqrt((len(seq) + 1) * 2)))
+        assert n >= 2
+        assert len(seq) == (n + 2) * (n - 1) / 2
+
+        for i in range(n - 1):
+            offset = (i + 3) * i // 2
+            for j in range(i + 1):
+                assert 1 <= seq[offset + j] <= 2
+            idx = seq[offset + i + 1] - 3
+            assert 0 <= idx <= len(self.engine.search_space)
+
         matrix, ops = seminas_utils.convert_seq_to_arch(seq, self.engine.search_space)
         arch = self.model_spec(matrix=matrix, ops=ops)
         return arch
@@ -154,7 +169,10 @@ class TrainNASBench(torch.utils.data.Dataset):
             )
 
     def is_valid(self, seq):
-        arch = self._decode(seq)
+        try:
+            arch = self._decode(seq)
+        except AssertionError:
+            return False
         if self.engine.is_valid(arch):
             # arch.matrix is None if arch is not valid.
             return self._encode(arch.matrix, arch.ops) not in self.seqs
