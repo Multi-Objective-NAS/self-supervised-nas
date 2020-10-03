@@ -1,0 +1,10 @@
+loss:
+    name: NPairsLoss
+miner:
+    name: AngularMiner
+    angle: 20
+visualizers:
+    -   min_dist: 0.1
+        n_neighbors: 16
+        angular_rp_forest: True
+        metric: cosine

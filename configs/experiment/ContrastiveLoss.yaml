@@ -1,6 +1,7 @@
 loss:
-    name: TripletMarginLoss
-    margin: 0.1
+    name: ContrastiveLoss
+    pos_margin: 0
+    neg_margin: 1
 miner:
     name: TripletMarginMiner
     margin: 0.1

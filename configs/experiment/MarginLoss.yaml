@@ -1,9 +1,13 @@
 loss:
-    name: TripletMarginLoss
-    margin: 0.1
+    name: MarginLoss
+    margin: 0.2
+    nu: 0.0
+    beta: 1.2
+    learn_beta: False
+    triplets_per_anchor: all
 miner:
     name: TripletMarginMiner
-    margin: 0.1
+    margin: 0.2
     type_of_triplets: semihard
 visualizers:
     -   min_dist: 0.5
