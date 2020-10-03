@@ -1,0 +1,10 @@
+dataset:
+    name: nasbench201
+    path: datasets/nasbench201/NAS-BENCH-201-v2-wo-losses.pth
+    mode: pretrain
+    samples_per_class: 8
+    max_seq_len: 35
+    graph_modify_ratio:
+        edit_distance_one: 1
+        edit_distance_two: 0
+        edit_distance_three: 0
