@@ -9,11 +9,17 @@ def pretrain_config_validator(cfg):
     assert cfg.trainer.batch_size >= 2
     assert cfg.trainer.batch_size % cfg.dataset.samples_per_class == 0
     assert cfg.trainer.batch_size // cfg.dataset.samples_per_class >= 2
+    assert cfg.controller.source_length == cfg.dataset.max_seq_len
+    assert cfg.controller.encoder_length == cfg.dataset.max_seq_len
+    assert cfg.controller.decoder_length == cfg.dataset.max_seq_len
 
 
 def train_config_validator(cfg):
     if cfg.pretrained_model_path:
         assert pathlib.Path(cfg.pretrained_model_path).exists()
+    assert cfg.controller.source_length == cfg.dataset.max_seq_len
+    assert cfg.controller.encoder_length == cfg.dataset.max_seq_len
+    assert cfg.controller.decoder_length == cfg.dataset.max_seq_len
 
 
 def load_pretrained_weights(model, path):

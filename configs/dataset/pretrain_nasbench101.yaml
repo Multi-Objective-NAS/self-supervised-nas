@@ -3,6 +3,7 @@ dataset:
     path: datasets/nasbench/nasbench_only108.tfrecord
     mode: pretrain
     samples_per_class: 8
+    max_seq_len: 27
     graph_modify_ratio:
         edit_distance_one: 1
         edit_distance_two: 1

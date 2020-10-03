@@ -11,11 +11,11 @@ from libs.SemiNAS.nas_bench import utils as seminas_utils
 from .graph_modifier import GraphModifier
 
 
-def get_engine_modelspec_maxseqlen(name, path):
+def get_engine_modelspec(name, path):
     if name == 'nasbench101':
-        return api101.NASBench(path), api101.ModelSpec, 27
+        return api101.NASBench(path), api101.ModelSpec
     elif name == 'nasbench201':
-        return api201.NASBench201API(path), api201.ModelSpec, 35
+        return api201.NASBench201API(path), api201.ModelSpec
     else:
         raise ValueError('Invalid name')
 
@@ -28,7 +28,7 @@ def get_dataset(name, path, mode, **kwargs):
         path = hydra_utils.to_absolute_path(path)
     assert pathlib.Path(path).exists()
 
-    engine, model_spec, max_seq_len = get_engine_modelspec_maxseqlen(name, path)
+    engine, model_spec = get_engine_modelspec(name, path)
     if mode == 'pretrain':
         dataset_cls = PretrainNASBench
     elif mode == 'train':
@@ -36,7 +36,6 @@ def get_dataset(name, path, mode, **kwargs):
     return dataset_cls(
         engine=engine,
         model_spec=model_spec,
-        max_seq_len=max_seq_len,
         **kwargs
     )
 
@@ -79,7 +78,9 @@ class PretrainNASBench(torch.utils.data.IterableDataset):
 
     def _encode(self, matrix, ops):
         seq = seminas_utils.convert_arch_to_seq(matrix, ops, self.search_space)
-        return seq + [0] * (self.max_seq_len - len(seq))
+        seq += [0] * (self.max_seq_len - len(seq))
+        assert len(seq) == self.max_seq_len
+        return seq
 
     def is_valid(self, matrix, ops):
         model = self.model_spec(matrix=matrix, ops=ops)
@@ -121,8 +122,10 @@ class TrainNASBench(torch.utils.data.Dataset):
             f'Metric/true_performance', true_perf, len(self.dataset))
 
     def _encode(self, matrix, ops):
-        seq = seminas_utils.convert_arch_to_seq(matrix, ops, self.search_space)
-        return seq + [0] * (self.max_seq_len - len(seq))
+        seq = seminas_utils.convert_arch_to_seq(matrix, ops, self.engine.search_space)
+        seq += [0] * (self.max_seq_len - len(seq))
+        assert len(seq) == self.max_seq_len
+        return seq
 
     def prepare(self, count):
         for key in self.engine.hash_iterator():

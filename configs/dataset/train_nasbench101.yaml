@@ -2,4 +2,5 @@ dataset:
     name: nasbench101
     path: datasets/nasbench/nasbench_only108.tfrecord
     mode: train
+    max_seq_len: 27
     batch_size: 64
