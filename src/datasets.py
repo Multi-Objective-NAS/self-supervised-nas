@@ -104,10 +104,6 @@ class TrainNASBench(torch.utils.data.Dataset):
         self.dataset = []
         self.seqs = []
 
-    def _query(self, matrix, ops):
-        arch = self.model_spec(matrix=matrix, ops=ops)
-        return self.engine.query(arch, 'valid'), self.engine.query(arch, 'test')
-
     def _append(self, seq, sampled_perf, true_perf):
         self.seqs.append(seq)
         self.dataset.append({
@@ -127,13 +123,20 @@ class TrainNASBench(torch.utils.data.Dataset):
         assert len(seq) == self.max_seq_len
         return seq
 
+    def _decode(self, seq):
+        matrix, ops = seminas_utils.convert_seq_to_arch(seq, self.engine.search_space)
+        arch = self.model_spec(matrix=matrix, ops=ops)
+        return arch
+
+    def _query(self, arch):
+        return self.engine.query(arch, 'valid'), self.engine.query(arch, 'test')
+
     def prepare(self, count):
         for key in self.engine.hash_iterator():
             arch = self.engine.get_modelspec_by_hash(key)
-            matrix, ops = arch.matrix, arch.ops
-            sampled_perf, true_perf = self._query(matrix, ops)
+            sampled_perf, true_perf = self._query(arch)
             self._append(
-                seq=self._encode(matrix, ops),
+                seq=self._encode(arch.matrix, arch.ops),
                 sampled_perf=sampled_perf,
                 true_perf=true_perf,
             )
@@ -142,18 +145,21 @@ class TrainNASBench(torch.utils.data.Dataset):
 
     def add(self, seqs):
         for seq in seqs:
-            matrix, ops = seminas_utils.convert_seq_to_arch(seq, self.engine.search_space)
-            sampled_perf, true_perf = self._query(matrix, ops)
+            arch = self._decode(seq)
+            sampled_perf, true_perf = self._query(arch)
             self._append(
-                seq=self._encode(matrix, ops),
+                seq=self._encode(arch.matrix, arch.ops),
                 sampled_perf=sampled_perf,
                 true_perf=true_perf,
             )
 
     def is_valid(self, seq):
-        matrix, ops = seminas_utils.convert_seq_to_arch(seq, self.engine.search_space)
-        arch = self.model_spec(matrix=matrix, ops=ops)
-        return self.engine.is_valid(arch) and seq not in self.seqs
+        arch = self._decode(seq)
+        if self.engine.is_valid(arch):
+            # arch.matrix is None if arch is not valid.
+            return self._encode(arch.matrix, arch.ops) not in self.seqs
+        else:
+            return False
 
     def shuffled(self):
         return torch.utils.data.DataLoader(
