@@ -43,7 +43,7 @@ def _sample_and_write_pth(n, input_path, output_path, need_loss):
                         if ename+"@"+str(e) in result['eval_times'].keys():
                             del result['eval_times'][ename+"@"+str(e)]
 
-                if !need_loss:
+                if not need_loss:
                     if 'eval_losses' in result.keys():
                         del result['eval_losses']
                     if 'train_losses' in result.keys():
