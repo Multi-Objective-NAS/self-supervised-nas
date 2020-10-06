@@ -47,6 +47,8 @@ def single_lookup(seed_hash, dataset, output_path):
     seed_test_acc = dataset.query(
         api101.ModelSpec(matrix=seed_matrix, ops=seed_ops), 'test', epochs=108)
 
+    random.seed(seed_hash)
+
     row_dict = dict()
     hash_iterator = list(dataset.hash_iterator())
     random.shuffle(hash_iterator)
