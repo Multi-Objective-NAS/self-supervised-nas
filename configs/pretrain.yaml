@@ -15,57 +15,10 @@ trainer:
     visualize_step: 400
 pretrained_model_path:
 visualizers:
-    -   n_neighbors: 8
-        min_dist: 0.0
-        metric: euclidean
-    -   n_neighbors: 16
-        min_dist: 0.0
-        metric: euclidean
-    -   n_neighbors: 32
-        min_dist: 0.0
-        metric: euclidean
-    -   n_neighbors: 8
-        min_dist: 0.1
-        metric: euclidean
-    -   n_neighbors: 16
-        min_dist: 0.1
-        metric: euclidean
-    -   n_neighbors: 32
-        min_dist: 0.1
-        metric: euclidean
-    -   n_neighbors: 8
-        min_dist: 0.5
-        metric: euclidean
-    -   n_neighbors: 16
-        min_dist: 0.5
-        metric: euclidean
-    -   n_neighbors: 32
-        min_dist: 0.5
-        metric: euclidean
-    -   n_neighbors: 8
-        min_dist: 0.0
+    -   min_dist: 0.1
+        n_neighbors: 16
+        angular_rp_forest: True
         metric: cosine
-    -   n_neighbors: 16
-        min_dist: 0.0
-        metric: cosine
-    -   n_neighbors: 32
-        min_dist: 0.0
-        metric: cosine
-    -   n_neighbors: 8
-        min_dist: 0.1
-        metric: cosine
-    -   n_neighbors: 16
-        min_dist: 0.1
-        metric: cosine
-    -   n_neighbors: 32
-        min_dist: 0.1
-        metric: cosine
-    -   n_neighbors: 8
-        min_dist: 0.5
-        metric: cosine
-    -   n_neighbors: 16
-        min_dist: 0.5
-        metric: cosine
-    -   n_neighbors: 32
-        min_dist: 0.5
-        metric: cosine
+    -   min_dist: 0.5
+        n_neighbors: 32
+        metric: euclidean
