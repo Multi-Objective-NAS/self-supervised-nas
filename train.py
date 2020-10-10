@@ -8,6 +8,7 @@ import hydra
 from libs.SemiNAS.nas_bench.controller import NAO
 from src.datasets import get_dataset
 from src.utils import train_config_validator, get_loss, get_optimizer, get_miner, get_scheduler, get_trainer, load_pretrained_weights
+from src.hooks import ModelSaverHook
 
 
 def _get_target_parameters(model, freeze_encoder_decoder):
@@ -37,6 +38,7 @@ def train(cfg):
     optimizer = get_optimizer(
         parameters=_get_target_parameters(controller, cfg.freeze_encoder_decoder), **cfg.optimizer)
     lr_scheduler = get_scheduler(optimizer=optimizer, **cfg.scheduler)
+    end_of_epoch_hook = ModelSaverHook().end_of_epoch_hook
 
     get_trainer(
         controller=controller,
@@ -44,6 +46,7 @@ def train(cfg):
         optimizer=optimizer,
         lr_scheduler=lr_scheduler,
         writer=writer,
+        end_of_epoch_hook=end_of_epoch_hook,
         **cfg.trainer,
     ).train()
 

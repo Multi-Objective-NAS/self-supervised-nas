@@ -105,6 +105,7 @@ class NAOTrainer:
         optimizer,
         lr_scheduler,
         writer,
+        end_of_epoch_hook,
         outer_epochs,
         inner_epochs,
         number_of_initial_archs,
@@ -129,6 +130,11 @@ class NAOTrainer:
         self.gradient_bound = gradient_bound
         self.total_iterations = 0
 
+        # For saving purposes
+        self.end_of_epoch_hook = end_of_epoch_hook
+        self.models = {'controller': self.controller}
+        self.optimizers = {'optimizer': self.optimizer}
+
     def train(self):
         self.dataset.prepare(self.number_of_initial_archs)
         for self.outer_epoch in range(1, self.outer_epochs+1):
@@ -141,6 +147,7 @@ class NAOTrainer:
             self.writer.add_scalar(
                 f'Generated Architectures', len(candidates), self.outer_epoch
             )
+            self.end_of_epoch_hook(self)
 
     def generate_architectures(self):
         generated_archs = []
