@@ -1,0 +1,17 @@
+loss:
+    name: TupletMarginLoss
+    margin: 5.73
+    scale: 64
+miner:
+    name: AngularMiner
+    angle: 20
+trainer:
+    batch_size: 64
+optimizer:
+    name: SGD
+    lr: 0.2
+visualizers:
+    -   min_dist: 0.1
+        n_neighbors: 16
+        angular_rp_forest: True
+        metric: cosine

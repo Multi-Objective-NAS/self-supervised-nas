@@ -1,13 +1,16 @@
 loss:
     name: AngularLoss
-    alpha: 25
+    alpha: 45
 miner:
     name: AngularMiner
-    angle: 12
+    angle: 20
 trainer:
     batch_size: 256
-    num_epochs: 3
+    num_epochs: 2
+    loss_weights:
+        reconstruction_loss: 1.0
+        metric_loss: 0.1
 visualizers:
-    -   min_dist: 0.1
-        n_neighbors: 16
-        metric: cosine
+    -   min_dist: 0.5
+        n_neighbors: 32
+        metric: euclidean

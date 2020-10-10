@@ -1,15 +1,20 @@
 loss:
-    name: TripletMarginLoss
-    margin: 0.1
+    name: LiftedStructureLoss
+    pos_margin: 0
+    neg_margin: 1
 miner:
     name: TripletMarginMiner
     margin: 0.1
     type_of_triplets: semihard
 trainer:
+    batch_size: 64
     loss_weights:
         reconstruction_loss: 1.0
-        metric_loss: 0.0
+        metric_loss: 0.05
+optimizer:
+    name: SGD
+    lr: 0.2
 visualizers:
-    -   min_dist: 0.5
+    -   min_dist: 0.2
         n_neighbors: 32
         metric: euclidean
