@@ -1,0 +1,11 @@
+NASBENCH_101_DATASET: "./datasets/nasbench/nasbench_only108.tfrecord"
+EDIT_DISTANCE: 3
+GRAPH_MODIFY_RATIO:
+  edit_distance_one: 1
+  edit_distance_two: 1
+  edit_distance_three: 1
+MAX_SEQ_LEN: 27
+TESTCASE_COUNT: 300
+stats:
+  MIN_ACCURACY: 0.9
+  MIN_DIFF: 0.7

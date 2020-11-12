@@ -10,13 +10,6 @@ import networkx as nx
 
 from nasbench import api as api101
 
-
-NASBENCH_101_DATASET = "/home/dzzp/workspace/dataset/nasbench_only108.tfrecord"
-
-SEED_ARCH_COUNT = 300
-MAX_EDIT_DISTANCE = 6
-OUTPUT_PATH = "outputs_test_acc"
-
 logging.basicConfig(level=logging.INFO,
                     format="%(asctime)s %(levelname)s %(processName)s %(message)s")
 
@@ -58,8 +51,10 @@ def single_lookup(seed_hash, dataset, output_path):
         arch_test_acc = dataset.query(
             api101.ModelSpec(matrix=matrix, ops=ops), 'test', epochs=108)
 
-        true_distance = get_edit_distance(seed_matrix, seed_ops, matrix, ops, max_edit_distance)
-        row_dict[true_distance] = ((true_distance, seed_hash, arch_hash, seed_test_acc - arch_test_acc, seed_test_acc, arch_test_acc))
+        true_distance = get_edit_distance(
+            seed_matrix, seed_ops, matrix, ops, max_edit_distance)
+        row_dict[true_distance] = ((true_distance, seed_hash, arch_hash,
+                                    seed_test_acc - arch_test_acc, seed_test_acc, arch_test_acc))
 
         # row_dict.keys() : 0, 1, ..., max_edit_distance
         if len(row_dict) == max_edit_distance + 1:
@@ -72,13 +67,13 @@ def single_lookup(seed_hash, dataset, output_path):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('-n', '--seed_arch_count', type=int, required=False, default=SEED_ARCH_COUNT,
-                        help=f'number_of_seed_architectures. default: {SEED_ARCH_COUNT}')
-    parser.add_argument('-ed', '--max_edit_distance', type=int, default=MAX_EDIT_DISTANCE, required=False,
-                        help=f'max edit distance to look up from dataset. default: {MAX_EDIT_DISTANCE}')
-    parser.add_argument('-i', '--dataset_path', required=False, default=NASBENCH_101_DATASET, help='path to dataset')
-    parser.add_argument('-o', '--output_path', required=False, default=OUTPUT_PATH,
-                        help=f'path to output directory, default "{OUTPUT_PATH}"')
+    parser.add_argument('-n', '--seed_arch_count', type=int,
+                        help=f'number_of_seed_architectures.')
+    parser.add_argument('-ed', '--max_edit_distance', type=int,
+                        help=f'max edit distance to look up from dataset')
+    parser.add_argument('-i', '--dataset_path', help='path to dataset')
+    parser.add_argument('-o', '--output_path',
+                        help=f'path to output directory')
     args = parser.parse_args()
 
     seed_arch_count = args.seed_arch_count
@@ -92,4 +87,5 @@ if __name__ == '__main__':
 
     seed_hashes = random.sample(dataset.hash_iterator(), seed_arch_count)
     with Pool(8) as p:
-        p.starmap(single_lookup, [(seed_hash, dataset, output_path) for seed_hash in seed_hashes])
+        p.starmap(single_lookup, [(seed_hash, dataset, output_path)
+                                  for seed_hash in seed_hashes])

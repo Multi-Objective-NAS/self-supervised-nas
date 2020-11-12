@@ -3,26 +3,13 @@ import logging
 import random
 import unittest
 
+from hydra.experimental import compose, initialize
 from nasbench import api as api101
 import networkx as nx
 import pandas as pd
 
-from src.datasets import NASBench
+from src.datasets import PretrainNASBench
 from src.graph_modifier import GraphModifier, NoValidModelExcpetion
-
-NASBENCH_101_DATASET = "./datasets/nasbench/nasbench_only108.tfrecord"
-TESTCASE_COUNT = 300
-SAMPLES_PER_CLASS = TESTCASE_COUNT
-EDIT_DISTANCE = 3
-
-MIN_ACCURACY = 0.9
-MIN_DIFF = 0.05
-
-GRAPH_MODIFY_RATIO = OrderedDict({
-    "edit_distance_one": 1,
-    "edit_distance_two": 1,
-    "edit_distance_three": 1
-})
 
 logging.basicConfig()
 logger = logging.getLogger()
@@ -33,18 +20,30 @@ class GraphModifierStatsTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        with initialize(config_path="../configs"):
+            cfg = compose(config_name="test")
+            cls.EDIT_DISTANCE = cfg.EDIT_DISTANCE
+            cls.GRAPH_MODIFY_RATIO = cfg.GRAPH_MODIFY_RATIO
+            cls.TESTCASE_COUNT = cfg.TESTCASE_COUNT
 
-        dataset = NASBench(
-            engine=api101.NASBench(NASBENCH_101_DATASET),
-            model_spec=api101.ModelSpec,
-            samples_per_class=SAMPLES_PER_CLASS,
-            graph_modify_ratio=GRAPH_MODIFY_RATIO
-        )
+            stats_cfg = cfg.stats
+            cls.SAMPLES_PER_CLASS = cls.TESTCASE_COUNT
+
+            cls.MIN_ACCURACY = stats_cfg.MIN_ACCURACY
+            cls.MIN_DIFF = stats_cfg.MIN_DIFF
+
+            dataset = PretrainNASBench(
+                engine=api101.NASBench(cfg.NASBENCH_101_DATASET),
+                model_spec=api101.ModelSpec,
+                samples_per_class=cls.SAMPLES_PER_CLASS,
+                max_seq_len=cfg.MAX_SEQ_LEN,
+                graph_modify_ratio=cls.GRAPH_MODIFY_RATIO
+            )
 
         cls.graph_modifier = dataset.graph_modifier
 
         cls.testcases = []
-        for _, key in enumerate(random.sample(dataset.engine.hash_iterator(), TESTCASE_COUNT)):
+        for _, key in enumerate(random.sample(dataset.engine.hash_iterator(), cls.TESTCASE_COUNT)):
             arch = dataset.engine.get_modelspec_by_hash(key)
             matrix, ops = arch.matrix, arch.ops
             cls.testcases.append((matrix, ops))
@@ -68,7 +67,8 @@ class GraphModifierStatsTest(unittest.TestCase):
         return nx.graph_edit_distance(G1, G2, node_match=node_match, edge_match=edge_match)
 
     def check_accuracy(self, function_to_test, edit_distance_list, title=None):
-        stats_df = pd.DataFrame([[0] * 5] * len(edit_distance_list), columns=[0, 1, 2, 3, -1])
+        stats_df = pd.DataFrame(
+            [[0] * 5] * len(edit_distance_list), columns=[0, 1, 2, 3, -1])
         stats_df["target_edit_distance"] = edit_distance_list
         stats_df = stats_df.set_index("target_edit_distance")
 
@@ -77,8 +77,10 @@ class GraphModifierStatsTest(unittest.TestCase):
             counts = defaultdict(int)
             for matrix, ops in self.testcases:
                 try:
-                    new_matrix, new_ops = function_to_test(matrix, ops, edit_distance)
-                    output_edit_distance = self.get_edit_distance(matrix, ops, new_matrix, new_ops)
+                    new_matrix, new_ops = function_to_test(
+                        matrix, ops, edit_distance)
+                    output_edit_distance = self.get_edit_distance(
+                        matrix, ops, new_matrix, new_ops)
                     counts[output_edit_distance] += 1
                 except NoValidModelExcpetion:
                     counts[-1] += 1
@@ -87,7 +89,8 @@ class GraphModifierStatsTest(unittest.TestCase):
                 stats_df.loc[edit_distance, output_edit_distance] = count
 
         for edit_distance in edit_distance_list:
-            accuracies.append(stats_df.loc[edit_distance, edit_distance] / len(self.testcases))
+            accuracies.append(
+                stats_df.loc[edit_distance, edit_distance] / len(self.testcases))
 
         stats_df["accuracy"] = accuracies
 
@@ -98,51 +101,61 @@ class GraphModifierStatsTest(unittest.TestCase):
         logger.info("\n\n\n")
 
         for ed in edit_distance_list:
-            self.assertGreaterEqual(stats_df.loc[ed, "accuracy"], MIN_ACCURACY)
+            self.assertGreaterEqual(
+                stats_df.loc[ed, "accuracy"], self.MIN_ACCURACY)
 
     def check_accuracy_modifier(self):
-        stats_df = pd.DataFrame([[0] * 5] * 3, columns=[0, 1, 2, 3, -1], index=["count", "target_ratio", "output_ratio"])
+        stats_df = pd.DataFrame([[0] * 5] * 3, columns=[0, 1, 2, 3, -1],
+                                index=["count", "target_ratio", "output_ratio"])
 
         counts = defaultdict(int)
         matrix, ops = self.testcases[0]
         for new_matrix, new_ops in self.graph_modifier.generate_modified_models(matrix, ops):
             try:
-                output_edit_distance = self.get_edit_distance(matrix, ops, new_matrix, new_ops)
+                output_edit_distance = self.get_edit_distance(
+                    matrix, ops, new_matrix, new_ops)
                 counts[output_edit_distance] += 1
             except NoValidModelExcpetion:
                 counts[-1] += 1
 
         TARGET_RATIO = {
-            i: v / sum(GRAPH_MODIFY_RATIO.values()) for i, v in enumerate(GRAPH_MODIFY_RATIO.values(), start=1)
+            i: v / sum(self.GRAPH_MODIFY_RATIO.values()) for i, v in enumerate(self.GRAPH_MODIFY_RATIO.values(), start=1)
         }
         for k, v in counts.items():
             k = int(k)
             stats_df.loc["count", k] = int(v)
             stats_df.loc["target_ratio", k] = TARGET_RATIO.get(k, 0)
-            stats_df.loc["output_ratio", k] = v / self.graph_modifier.samples_per_class
+            stats_df.loc["output_ratio", k] = v / \
+                self.graph_modifier.samples_per_class
 
         logger.info("[STATS] graph_modifier.generate_modified_models")
         logger.info(f"\n{stats_df.to_string()}")
         logger.info("\n\n\n")
 
         for ed in TARGET_RATIO.keys():
-            self.assertLessEqual(abs(stats_df.loc["output_ratio", ed] - stats_df.loc["target_ratio", ed]), MIN_DIFF)
+            self.assertLessEqual(abs(
+                stats_df.loc["output_ratio", ed] - stats_df.loc["target_ratio", ed]), self.MIN_DIFF)
 
     def test_accuracy_edit_node(self):
-        self.check_accuracy(self.graph_modifier._generate_edit_node_model, list(range(1, EDIT_DISTANCE + 1)))
+        self.check_accuracy(self.graph_modifier._generate_edit_node_model, list(
+            range(1, self.EDIT_DISTANCE + 1)))
 
     # test edit-distance=1,2
     def test_accuracy_edit_edge(self):
-        self.check_accuracy(self.graph_modifier._generate_edit_edge_model, list(range(1, EDIT_DISTANCE)))
+        self.check_accuracy(self.graph_modifier._generate_edit_edge_model, list(
+            range(1, self.EDIT_DISTANCE)))
 
     def test_accuracy_edit_distance_one_model(self):
-        self.check_accuracy(lambda matrix, ops, _: self.graph_modifier.generate_edit_distance_one_model(matrix, ops), [1], title="edit_distance_one")
+        self.check_accuracy(lambda matrix, ops, _: self.graph_modifier.generate_edit_distance_one_model(
+            matrix, ops), [1], title="edit_distance_one")
 
     def test_accuracy_edit_distance_two_model(self):
-        self.check_accuracy(lambda matrix, ops, _: self.graph_modifier.generate_edit_distance_two_model(matrix, ops), [2], title="edit_distance_two")
+        self.check_accuracy(lambda matrix, ops, _: self.graph_modifier.generate_edit_distance_two_model(
+            matrix, ops), [2], title="edit_distance_two")
 
     def test_accuracy_edit_distance_three_model(self):
-        self.check_accuracy(lambda matrix, ops, _: self.graph_modifier.generate_edit_distance_three_model(matrix, ops), [3], title="edit_distance_three")
+        self.check_accuracy(lambda matrix, ops, _: self.graph_modifier.generate_edit_distance_three_model(
+            matrix, ops), [3], title="edit_distance_three")
 
     def test_accuracy_modified_models(self):
         self.check_accuracy_modifier()
