@@ -1,5 +1,8 @@
+import random
 import pathlib
+import numpy as np
 import torch
+import torch.backends.cudnn as cudnn
 from pytorch_metric_learning import losses, miners
 from src import trainers
 
@@ -27,6 +30,14 @@ def load_pretrained_weights(model, path):
         model.load_state_dict(torch.load(path))
     return model
 
+
+def fix_seed(seed):
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    cudnn.enabled = True
+    cudnn.benchmark = True
 
 def get_optimizer(name, parameters, **kwargs):
     return getattr(torch.optim, name)(parameters, **kwargs)
