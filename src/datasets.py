@@ -42,7 +42,7 @@ def get_dataset(name, path, mode, **kwargs):
 
 
 class PretrainNASBench(torch.utils.data.IterableDataset):
-    def __init__(self, engine, model_spec, max_seq_len, samples_per_class, graph_modify_ratio):
+    def __init__(self, engine, model_spec, max_seq_len, samples_per_class, graph_modify_ratio, seed):
         self.engine = engine
         self.model_spec = model_spec
         self.max_seq_len = max_seq_len
@@ -60,6 +60,8 @@ class PretrainNASBench(torch.utils.data.IterableDataset):
             samples_per_class=samples_per_class - 1,
             **graph_modify_ratio)
 
+        self.seed = seed
+
     def __iter__(self):
         for index, matrix, ops in self._random_graph_generator():
             seq = self._encode(matrix, ops)
@@ -72,10 +74,13 @@ class PretrainNASBench(torch.utils.data.IterableDataset):
         return self._dataset_length * self.samples_per_class
 
     def _random_graph_generator(self):
-        for index, key in enumerate(self.engine.hash_iterator()):
+        keys = list(self.engine.hash_iterator())
+        np.random.RandomState(seed=self.seed).shuffle(keys)
+        for index, key in enumerate(keys):
             arch = self.engine.get_modelspec_by_hash(key)
             matrix, ops = arch.matrix, arch.ops
             yield (index, matrix, ops)
+        self.seed += 1
 
     def _encode(self, matrix, ops):
         seq = seminas_utils.convert_arch_to_seq(matrix, ops, self.search_space)
@@ -95,12 +100,13 @@ class PretrainNASBench(torch.utils.data.IterableDataset):
 
 
 class TrainNASBench(torch.utils.data.Dataset):
-    def __init__(self, engine, model_spec, max_seq_len, batch_size, writer):
+    def __init__(self, engine, model_spec, max_seq_len, batch_size, writer, seed):
         self.engine = engine
         self.model_spec = model_spec
         self.max_seq_len = max_seq_len
         self.batch_size = batch_size
         self.writer = writer
+        self.seed = seed
 
         self.dataset = []
         self.seqs = []
@@ -147,7 +153,9 @@ class TrainNASBench(torch.utils.data.Dataset):
         return self.engine.query(arch, 'valid'), self.engine.query(arch, 'test')
 
     def prepare(self, count):
-        for key in self.engine.hash_iterator():
+        keys = list(self.engine.hash_iterator())
+        np.random.RandomState(seed=self.seed).shuffle(keys)
+        for key in keys:
             arch = self.engine.get_modelspec_by_hash(key)
             sampled_perf, true_perf = self._query(arch)
             self._append(
@@ -157,6 +165,7 @@ class TrainNASBench(torch.utils.data.Dataset):
             )
             if len(self.dataset) >= count:
                 break
+        self.seed += 1
 
     def add(self, seqs):
         for seq in seqs:

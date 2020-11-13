@@ -1,12 +1,11 @@
 import logging
 import hydra
-import torch
 import torch.nn
 import umap
 from pytorch_metric_learning import losses, miners
 from libs.SemiNAS.nas_bench.controller import NAO
 from src.datasets import get_dataset
-from src.utils import pretrain_config_validator, get_loss, get_optimizer, get_miner, get_scheduler, get_trainer, load_pretrained_weights
+from src.utils import pretrain_config_validator, get_loss, get_optimizer, get_miner, get_scheduler, get_trainer, load_pretrained_weights, fix_seed
 from src.hooks import TensorboardHook, ModelSaverHook
 
 
@@ -14,11 +13,12 @@ from src.hooks import TensorboardHook, ModelSaverHook
 def pretrain(cfg):
     print(cfg.pretty())
     pretrain_config_validator(cfg)
+    fix_seed(cfg.seed)
 
     controller = load_pretrained_weights(
         NAO(**cfg.controller).to(0), cfg.pretrained_model_path)
     models = {'trunk': controller}
-    dataset = get_dataset(**cfg.dataset)
+    dataset = get_dataset(seed=cfg.seed, **cfg.dataset)
     optimizers = {'trunk_optimizer': get_optimizer(parameters=models['trunk'].parameters(), **cfg.optimizer)}
     lr_schedulers = {'trunk_scheduler_by_iteration': get_scheduler(optimizer=optimizers['trunk_optimizer'], **cfg.scheduler)}
     loss_funcs = {'reconstruction_loss': torch.nn.NLLLoss(), 'metric_loss': get_loss(**cfg.loss)}
