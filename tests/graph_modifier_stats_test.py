@@ -22,22 +22,22 @@ class GraphModifierStatsTest(unittest.TestCase):
     def setUpClass(cls):
         with initialize(config_path="../configs"):
             cfg = compose(config_name="test")
-            cls.EDIT_DISTANCE = cfg.EDIT_DISTANCE
-            cls.GRAPH_MODIFY_RATIO = cfg.GRAPH_MODIFY_RATIO
+            cls.edit_distance = cfg.edit_distance
+            cls.graph_modify_ratio = cfg.graph_modify_ratio
             cls.TESTCASE_COUNT = cfg.TESTCASE_COUNT
 
             stats_cfg = cfg.stats
             cls.SAMPLES_PER_CLASS = cls.TESTCASE_COUNT
 
-            cls.MIN_ACCURACY = stats_cfg.MIN_ACCURACY
-            cls.MIN_DIFF = stats_cfg.MIN_DIFF
+            cls.min_accuracy = stats_cfg.min_accuracy
+            cls.min_diff = stats_cfg.min_diff
 
             dataset = PretrainNASBench(
-                engine=api101.NASBench(cfg.NASBENCH_101_DATASET),
+                engine=api101.NASBench(cfg.dataset_path),
                 model_spec=api101.ModelSpec,
                 samples_per_class=cls.SAMPLES_PER_CLASS,
-                max_seq_len=cfg.MAX_SEQ_LEN,
-                graph_modify_ratio=cls.GRAPH_MODIFY_RATIO
+                max_seq_len=cfg.max_seq_len,
+                graph_modify_ratio=cls.graph_modify_ratio
             )
 
         cls.graph_modifier = dataset.graph_modifier
@@ -102,7 +102,7 @@ class GraphModifierStatsTest(unittest.TestCase):
 
         for ed in edit_distance_list:
             self.assertGreaterEqual(
-                stats_df.loc[ed, "accuracy"], self.MIN_ACCURACY)
+                stats_df.loc[ed, "accuracy"], self.min_accuracy)
 
     def check_accuracy_modifier(self):
         stats_df = pd.DataFrame([[0] * 5] * 3, columns=[0, 1, 2, 3, -1],
@@ -119,7 +119,7 @@ class GraphModifierStatsTest(unittest.TestCase):
                 counts[-1] += 1
 
         TARGET_RATIO = {
-            i: v / sum(self.GRAPH_MODIFY_RATIO.values()) for i, v in enumerate(self.GRAPH_MODIFY_RATIO.values(), start=1)
+            i: v / sum(self.graph_modify_ratio.values()) for i, v in enumerate(self.graph_modify_ratio.values(), start=1)
         }
         for k, v in counts.items():
             k = int(k)
@@ -134,16 +134,16 @@ class GraphModifierStatsTest(unittest.TestCase):
 
         for ed in TARGET_RATIO.keys():
             self.assertLessEqual(abs(
-                stats_df.loc["output_ratio", ed] - stats_df.loc["target_ratio", ed]), self.MIN_DIFF)
+                stats_df.loc["output_ratio", ed] - stats_df.loc["target_ratio", ed]), self.min_diff)
 
     def test_accuracy_edit_node(self):
         self.check_accuracy(self.graph_modifier._generate_edit_node_model, list(
-            range(1, self.EDIT_DISTANCE + 1)))
+            range(1, self.edit_distance + 1)))
 
     # test edit-distance=1,2
     def test_accuracy_edit_edge(self):
         self.check_accuracy(self.graph_modifier._generate_edit_edge_model, list(
-            range(1, self.EDIT_DISTANCE)))
+            range(1, self.edit_distance)))
 
     def test_accuracy_edit_distance_one_model(self):
         self.check_accuracy(lambda matrix, ops, _: self.graph_modifier.generate_edit_distance_one_model(

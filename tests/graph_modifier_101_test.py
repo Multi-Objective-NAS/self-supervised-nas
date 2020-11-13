@@ -39,21 +39,21 @@ class GraphModifierTest(unittest.TestCase):
     def setUpClass(cls):
         with initialize(config_path="../configs"):
             cfg = compose(config_name="test")
-            cls.TESTCASE_COUNT = cfg.TESTCASE_COUNT
-            cls.EDIT_DISTANCE = cfg.EDIT_DISTANCE
+            cls.testcase_count = cfg.testcase_count
+            cls.edit_distance = cfg.edit_distance
 
             dataset = PretrainNASBench(
-                engine=api101.NASBench(cfg.NASBENCH_101_DATASET),
+                engine=api101.NASBench(cfg.dataset_path),
                 model_spec=api101.ModelSpec,
-                samples_per_class=cls.TESTCASE_COUNT,
-                max_seq_len=cfg.MAX_SEQ_LEN,
-                graph_modify_ratio=cfg.GRAPH_MODIFY_RATIO
+                samples_per_class=cls.testcase_count,
+                max_seq_len=cfg.max_seq_len,
+                graph_modify_ratio=cfg.graph_modify_ratio
             )
 
         cls.graph_modifier = dataset.graph_modifier
 
         cls.testcases = []
-        for _, key in enumerate(random.sample(dataset.engine.hash_iterator(), cls.TESTCASE_COUNT)):
+        for _, key in enumerate(random.sample(dataset.engine.hash_iterator(), cls.testcase_count)):
             arch = dataset.engine.get_modelspec_by_hash(key)
             matrix, ops = arch.matrix, arch.ops
             cls.testcases.append((matrix, ops))
@@ -136,6 +136,6 @@ class GraphModifierTest(unittest.TestCase):
             try:
                 for iidx, (new_matrix, new_ops) in enumerate(self.graph_modifier.generate_modified_models(matrix, ops)):
                     self.assertTrue(self.get_edit_distance(
-                        matrix, ops, new_matrix, new_ops) <= self.EDIT_DISTANCE)
+                        matrix, ops, new_matrix, new_ops) <= self.edit_distance)
             except NoValidModelExcpetion:
                 pass
