@@ -131,8 +131,9 @@ class TrainNASBench(torch.utils.data.Dataset):
         return seq
 
     def _decode(self, seq):
-        assert 6 in seq
-        seq = seq[:seq.index(6) + 1]
+        output_index = len(self.engine.search_space) + 3
+        assert output_index in seq
+        seq = seq[:seq.index(output_index) + 1]
 
         n = int(math.floor(math.sqrt((len(seq) + 1) * 2)))
         assert n >= 2
