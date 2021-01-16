@@ -1,7 +1,7 @@
 controller:
     encoder_layers: 1
     decoder_layers: 1
-    mlp_layers: 2
+    mlp_layers: 1
     mlp_hidden_size: 64
     hidden_size: 16
     vocab_size: 7

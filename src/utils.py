@@ -1,7 +1,7 @@
 import pathlib
 import torch
 from pytorch_metric_learning import losses, miners
-from src import trainers
+from src import trainers, custom_losses
 
 
 def pretrain_config_validator(cfg):
@@ -41,7 +41,10 @@ def get_miner(name, **kwargs):
 
 
 def get_loss(name, **kwargs):
-    return getattr(losses, name)(**kwargs)
+    try:
+        return getattr(custom_losses, name)(**kwargs)
+    except AttributeError:
+        return getattr(losses, name)(**kwargs)
 
 
 def get_trainer(name, **kwargs):
