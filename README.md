@@ -1,3 +1,6 @@
+# Pretraining Neural Architecture Search Controllers with Locality-based Self-Supervised Learning
+- https://arxiv.org/abs/2103.08157
+
 # Environments
 - conda environment configs: `environment.yaml`
 - How to install:
