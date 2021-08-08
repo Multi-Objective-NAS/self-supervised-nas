@@ -1,5 +1,6 @@
 # Pretraining Neural Architecture Search Controllers with Locality-based Self-Supervised Learning
 - https://arxiv.org/abs/2103.08157
+- Accepted to NeurIPS 2020 Workshop: Self-Supervised Learning - Theory and Practice
 
 # Environments
 - conda environment configs: `environment.yaml`
